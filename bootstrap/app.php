@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
         'checkIfConnected' => \App\Http\Middleware\CheckAuth::class,
         'checkRole' => \App\Http\Middleware\CheckRole::class,
+        'check2fa' => \App\Http\Middleware\CheckTwoFactorSession::class,
     ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

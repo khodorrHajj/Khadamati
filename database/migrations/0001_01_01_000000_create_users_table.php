@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('avatar')->nullable();
 
             //2FA.
-            $table->boolean('two_factor_enabled')->default(false);
+            $table->boolean('two_factor_enabled')->default(true);
             $table->string('two_factor_code')->nullable();
             $table->timestamp('two_factor_expires_at')->nullable();
 
