@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Laravel\Socialite\Socialite;
+use Throwable;
 
 class LoginController extends Controller
 {
@@ -187,4 +189,70 @@ class LoginController extends Controller
     {
         return view('Authentication.Home');
     }
+
+    public function redirectToGoogle()
+{
+    return Socialite::driver('google')->redirect();
+}
+
+public function handleGoogleCallback(Request $request)
+{
+    try {
+        $googleUser = Socialite::driver('google')->user();
+    } catch (Throwable $e) {
+        return redirect()->route('login')->withErrors([
+            'google' => 'Google login failed. Please try again.',
+        ]);
+    }
+
+    $citizenRole = Role::where('role', 'citizen')->first();
+
+    if (!$citizenRole) {
+        return redirect()->route('login')->withErrors([
+            'role' => 'Citizen role does not exist. Please insert roles in the database first.',
+        ]);
+    }
+
+    $user = User::where('google_id', $googleUser->getId())->first();
+
+    if (!$user) {
+        $user = User::where('email', $googleUser->getEmail())->first();
+    }
+
+    if ($user) {
+        $user->google_id = $googleUser->getId();
+        $user->avatar = $googleUser->getAvatar();
+        $user->email_verified_at = now();
+        $user->save();
+    } else {
+        $user = new User();
+
+        $user->name = $googleUser->getName();
+        $user->email = $googleUser->getEmail();
+        $user->password = null;
+        $user->role_id = $citizenRole->id;
+        $user->is_active = true;
+
+        $user->google_id = $googleUser->getId();
+        $user->avatar = $googleUser->getAvatar();
+        $user->email_verified_at = now();
+
+        // Google users do not need our email/password 2FA.
+        $user->two_factor_enabled = false;
+
+        $user->save();
+    }
+
+    if (!$user->is_active) {
+        return redirect()->route('login')->withErrors([
+            'email' => 'Your account is deactivated.',
+        ]);
+    }
+
+    Auth::login($user);
+
+    $request->session()->regenerate();
+
+    return redirect()->route('home');
+}
 }

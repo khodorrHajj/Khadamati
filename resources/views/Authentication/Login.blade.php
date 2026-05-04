@@ -39,6 +39,12 @@
         <button type="submit">Login</button>
     </form>
 
+    <br>
+
+<a href="{{ route('google.redirect') }}">
+    <button type="button">Login with Google</button>
+</a>
+
     <p>
         Don't have an account?
         <a href="{{ route('signup') }}">Register</a>
