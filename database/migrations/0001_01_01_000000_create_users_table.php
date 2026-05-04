@@ -6,17 +6,34 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+
             $table->string('name');
             $table->string('email')->unique();
+
+            // Nullable because later Google login users may not have a normal password.
+            $table->string('password')->nullable();
+
+            $table->foreignId('role_id')
+                ->constrained('roles')
+                ->cascadeOnUpdate()
+                ->restrictOnDelete();
+
+            $table->boolean('is_active')->default(true);
+
+            //email verification / Google login.
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('google_id')->nullable()->unique();
+            $table->string('avatar')->nullable();
+
+            //2FA.
+            $table->boolean('two_factor_enabled')->default(false);
+            $table->string('two_factor_code')->nullable();
+            $table->timestamp('two_factor_expires_at')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
         });
@@ -37,13 +54,10 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };
