@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class LoginController extends Controller
 {
@@ -39,8 +40,10 @@ class LoginController extends Controller
         $user->role_id = $citizenRole->id;
         $user->is_active = true;
 
-        // These are ready for later pushes.
-        $user->two_factor_enabled = false;
+        // Email/password users will use 2FA.
+        $user->two_factor_enabled = true;
+
+        // Google login fields for later.
         $user->google_id = null;
         $user->avatar = null;
 
@@ -70,7 +73,18 @@ class LoginController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            // testing purpose
+            $user = Auth::user();
+
+            if ($user->two_factor_enabled) {
+                $this->sendTwoFactorCode($user);
+
+                Auth::logout();
+
+                $request->session()->put('two_factor_user_id', $user->id);
+
+                return redirect()->route('twofactor.form')
+                    ->with('success', 'A verification code was sent to your email.');
+            }
 
             return redirect()->route('home');
         }
@@ -80,10 +94,89 @@ class LoginController extends Controller
         ])->withInput();
     }
 
+    public function twoFactorForm()
+    {
+        return view('Authentication.Verify2fa');
+    }
+
+    public function verifyTwoFactor(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|digits:6',
+        ]);
+
+        $userId = $request->session()->get('two_factor_user_id');
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        if (!$user->two_factor_code || !$user->two_factor_expires_at) {
+            return redirect()->route('login')->withErrors([
+                'code' => 'No verification code found. Please login again.',
+            ]);
+        }
+
+        if (now()->greaterThan($user->two_factor_expires_at)) {
+            return redirect()->back()->withErrors([
+                'code' => 'The verification code has expired. Please request a new one.',
+            ]);
+        }
+
+        if (!Hash::check($request->code, $user->two_factor_code)) {
+            return redirect()->back()->withErrors([
+                'code' => 'Invalid verification code.',
+            ]);
+        }
+
+        $user->two_factor_code = null;
+        $user->two_factor_expires_at = null;
+        $user->save();
+
+        Auth::loginUsingId($user->id);
+
+        $request->session()->forget('two_factor_user_id');
+        $request->session()->regenerate();
+
+        return redirect()->route('home');
+    }
+
+    public function resendTwoFactor(Request $request)
+    {
+        $userId = $request->session()->get('two_factor_user_id');
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $this->sendTwoFactorCode($user);
+
+        return redirect()->back()->with('success', 'A new verification code was sent.');
+    }
+
+    private function sendTwoFactorCode(User $user)
+    {
+        $code = random_int(100000, 999999);
+
+        $user->two_factor_code = Hash::make($code);
+        $user->two_factor_expires_at = now()->addMinutes(10);
+        $user->save();
+
+        Mail::raw("Your verification code is: " . $code, function ($message) use ($user) {
+            $message->to($user->email);
+            $message->subject('Your E-Services Verification Code');
+        });
+    }
+
     public function logout(Request $request)
     {
         Auth::logout();
 
+        $request->session()->forget('two_factor_user_id');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

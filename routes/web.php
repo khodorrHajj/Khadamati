@@ -13,6 +13,12 @@ Route::post('/register', [LoginController::class, 'register'])->name('register')
 Route::get('/login', [LoginController::class, 'login'])->name('login');
 Route::post('/dologin', [LoginController::class, 'doLogin'])->name('dologin');
 
+Route::middleware('check2fa')->group(function () {
+    Route::get('/2fa', [LoginController::class, 'twoFactorForm'])->name('twofactor.form');
+    Route::post('/2fa', [LoginController::class, 'verifyTwoFactor'])->name('twofactor.verify');
+    Route::post('/2fa/resend', [LoginController::class, 'resendTwoFactor'])->name('twofactor.resend');
+});
+
 Route::middleware('checkIfConnected')->group(function () {
     Route::get('/home', [LoginController::class, 'home'])->name('home');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
