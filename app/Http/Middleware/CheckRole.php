@@ -5,19 +5,20 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, $role)
+    public function handle(Request $request, Closure $next, string $role): Response
     {
-        if (!Auth::check()) {
-            return redirect()->route('login');
+        if (Auth::check()) {
+            if (Auth::user()->role && Auth::user()->role->role === $role) {
+                return $next($request);
+            } else {
+                return abort(403);
+            }
+        } else {
+            return abort(401);
         }
-
-        if (!Auth::user()->role || Auth::user()->role->role !== $role) {
-            abort(403, 'Unauthorized');
-        }
-
-        return $next($request);
     }
 }

@@ -186,9 +186,21 @@ class LoginController extends Controller
     }
 
     public function home()
-    {
-        return view('Authentication.Home');
+{
+    if (Auth::user()->hasRole('admin')) {
+        return redirect()->route('admin.dashboard');
     }
+
+    if (Auth::user()->hasRole('municipality')) {
+        return redirect()->route('municipality.dashboard');
+    }
+
+    if (Auth::user()->hasRole('citizen')) {
+        return redirect()->route('citizen.dashboard');
+    }
+
+    return abort(403);
+}
 
     public function redirectToGoogle()
 {

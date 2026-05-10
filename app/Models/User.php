@@ -21,6 +21,7 @@ class User extends Authenticatable
         'two_factor_enabled',
         'two_factor_code',
         'two_factor_expires_at',
+        'government_office_id',
     ];
 
     protected $hidden = [
@@ -43,5 +44,15 @@ class User extends Authenticatable
     public function hasRole($role)
     {
         return $this->role && $this->role->role === $role;
+    }
+
+    public function governmentOffice()
+    {
+        return $this->belongsTo(GovernmentOffice::class, 'government_office_id', 'id');
+    }
+
+    public function serviceRequests()
+    {
+        return $this->hasMany(ServiceRequest::class, 'user_id', 'id');
     }
 }
