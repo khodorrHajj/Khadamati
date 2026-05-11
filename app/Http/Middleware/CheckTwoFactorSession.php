@@ -9,7 +9,10 @@ class CheckTwoFactorSession
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!$request->session()->has('two_factor_user_id')) {
+        if (
+            !$request->session()->has('two_factor_user_id') &&
+            !$request->session()->has('pending_registration')
+        ) {
             return redirect()->route('login');
         }
 

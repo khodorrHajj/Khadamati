@@ -1,43 +1,58 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Verify 2FA</title>
-</head>
-<body>
+@extends('layouts.auth')
 
-    <h1>Two-Factor Verification</h1>
+@section('title', 'Verify 2FA')
 
-    @if (session('success'))
-        <p style="color: green;">{{ session('success') }}</p>
-    @endif
+@section('content')
+    <div class="login-logo">
+        <a href="{{ route('login') }}"><b>E</b>-Services</a>
+    </div>
 
-    @if ($errors->any())
-        <div style="color: red;">
-            @foreach ($errors->all() as $error)
-                <p>{{ $error }}</p>
-            @endforeach
+    <div class="card">
+        <div class="card-body login-card-body">
+            <p class="login-box-msg">Enter your verification code</p>
+
+            @if (session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    @foreach ($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('twofactor.verify') }}">
+                @csrf
+
+                <div class="input-group mb-3">
+                    <input
+                        type="text"
+                        name="code"
+                        maxlength="6"
+                        class="form-control @error('code') is-invalid @enderror"
+                        placeholder="Verification Code"
+                    >
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-shield-alt"></span>
+                        </div>
+                    </div>
+                    @error('code')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Verify</button>
+            </form>
+
+            <form method="POST" action="{{ route('twofactor.resend') }}" class="mt-3">
+                @csrf
+                <button type="submit" class="btn btn-outline-secondary btn-block">Resend Code</button>
+            </form>
         </div>
-    @endif
-
-    <form method="POST" action="{{ route('twofactor.verify') }}">
-        @csrf
-
-        <div>
-            <label>Verification Code</label>
-            <input type="text" name="code" maxlength="6">
-        </div>
-
-        <br>
-
-        <button type="submit">Verify</button>
-    </form>
-
-    <br>
-
-    <form method="POST" action="{{ route('twofactor.resend') }}">
-        @csrf
-        <button type="submit">Resend Code</button>
-    </form>
-
-</body>
-</html>
+    </div>
+@endsection
