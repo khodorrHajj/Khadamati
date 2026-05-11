@@ -1,85 +1,93 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Municipalities</title>
-</head>
-<body>
+@extends('layouts.admin')
 
-    <h1>Manage Municipalities</h1>
+@section('title', 'Municipalities')
+@section('page-title', 'Manage Municipalities')
 
-    <a href="{{ route('admin.dashboard') }}">Back to Dashboard</a>
-
+@section('content')
     @if (session('success'))
-        <p style="color: green;">{{ session('success') }}</p>
+        <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
     @if ($errors->any())
-        <div style="color: red;">
+        <div class="alert alert-danger">
             @foreach ($errors->all() as $error)
-                <p>{{ $error }}</p>
+                <div>{{ $error }}</div>
             @endforeach
         </div>
     @endif
 
-    <h2>Create Municipality</h2>
-
-    <form method="POST" action="{{ route('admin.municipalities.store') }}">
-        @csrf
-
-        <div>
-            <label>Name</label>
-            <input type="text" name="name">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Create Municipality</h3>
         </div>
+        <div class="card-body">
+            <form method="POST" action="{{ route('admin.municipalities.store') }}">
+                @csrf
 
-        <br>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" name="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror">
+                    @error('name')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
 
-        <div>
-            <label>Address</label>
-            <input type="text" name="address">
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" name="address" value="{{ old('address') }}" class="form-control @error('address') is-invalid @enderror">
+                    @error('address')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" name="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror">
+                    @error('phone')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror">
+                    @error('email')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create</button>
+            </form>
         </div>
+    </div>
 
-        <br>
-
-        <div>
-            <label>Phone</label>
-            <input type="text" name="phone">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Existing Municipalities</h3>
         </div>
-
-        <br>
-
-        <div>
-            <label>Email</label>
-            <input type="email" name="email">
+        <div class="card-body table-responsive p-0">
+            <table class="table table-bordered table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($municipalities as $municipality)
+                        <tr>
+                            <td>{{ $municipality->id }}</td>
+                            <td>{{ $municipality->name }}</td>
+                            <td>{{ $municipality->address }}</td>
+                            <td>{{ $municipality->phone }}</td>
+                            <td>{{ $municipality->email }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-
-        <br>
-
-        <button type="submit">Create</button>
-    </form>
-
-    <hr>
-
-    <h2>Existing Municipalities</h2>
-
-    <table border="1" cellpadding="8">
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Address</th>
-            <th>Phone</th>
-            <th>Email</th>
-        </tr>
-
-        @foreach ($municipalities as $municipality)
-            <tr>
-                <td>{{ $municipality->id }}</td>
-                <td>{{ $municipality->name }}</td>
-                <td>{{ $municipality->address }}</td>
-                <td>{{ $municipality->phone }}</td>
-                <td>{{ $municipality->email }}</td>
-            </tr>
-        @endforeach
-    </table>
-
-</body>
-</html>
+    </div>
+@endsection
