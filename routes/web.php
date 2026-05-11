@@ -41,8 +41,15 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
     ->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-        Route::get('/municipalities', [AdminController::class, 'municipalities'])->name('municipalities');
-        Route::post('/municipalities', [AdminController::class, 'storeMunicipality'])->name('municipalities.store');
+        Route::resource('municipalities', \App\Http\Controllers\Admin\MunicipalityController::class)->names([
+        'index'   => 'municipalities.index',
+        'create'  => 'municipalities.create',
+        'store'   => 'municipalities.store',
+        'show'    => 'municipalities.show',
+        'edit'    => 'municipalities.edit',
+        'update'  => 'municipalities.update',
+        'destroy' => 'municipalities.destroy',
+    ]);
 
         Route::get('/offices', [AdminController::class, 'offices'])->name('offices');
         Route::post('/offices', [AdminController::class, 'storeOffice'])->name('offices.store');
