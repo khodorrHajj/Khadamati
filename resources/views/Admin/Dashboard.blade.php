@@ -54,7 +54,7 @@
                 <div class="icon">
                     <i class="fas fa-building"></i>
                 </div>
-                <a href="{{ route('admin.offices') }}" class="small-box-footer">
+                <a href="{{ route('admin.offices.index') }}" class="small-box-footer">
                     Open <i class="fas fa-arrow-circle-right"></i>
                 </a>
             </div>

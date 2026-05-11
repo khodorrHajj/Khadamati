@@ -19,7 +19,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('admin.offices') }}" class="nav-link {{ request()->is('admin/offices') ? 'active' : '' }}">
+                    <a href="{{ route('admin.offices.index') }}" class="nav-link {{ request()->is('admin/offices*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-building"></i>
                         <p>Manage Government Offices</p>
                     </a>

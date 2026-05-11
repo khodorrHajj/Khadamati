@@ -9,8 +9,21 @@ class GovernmentOffice extends Model
     protected $fillable = [
         'municipality_id',
         'name',
+        'service_type',
+        'phone',
+        'email',
         'address',
+        'city',
+        'street',
+        'building',
         'google_maps_location',
+        'google_maps_url',
+        'latitude',
+        'longitude',
+        'place_id',
+        'formatted_address',
+        'status',
+        'notes',
         'working_hours',
         'contact_info',
     ];
@@ -33,5 +46,10 @@ class GovernmentOffice extends Model
     public function services()
     {
         return $this->hasMany(Service::class, 'government_office_id', 'id');
+    }
+
+    public function workingHours()
+    {
+        return $this->hasMany(GovernmentOfficeWorkingHour::class, 'government_office_id', 'id');
     }
 }

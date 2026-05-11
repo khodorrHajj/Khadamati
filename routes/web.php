@@ -16,6 +16,33 @@ Route::post('/register', [LoginController::class, 'register'])->name('register')
 Route::get('/login', [LoginController::class, 'login'])->name('login');
 Route::post('/dologin', [LoginController::class, 'doLogin'])->name('dologin');
 
+// Temporary testing route. Remove when admin testing is finished.
+Route::get('/fake-admin-login', function () {
+    $adminRole = \App\Models\Role::where('role', 'admin')->first();
+
+    if (!$adminRole) {
+        abort(500, 'Admin role does not exist.');
+    }
+
+    $admin = \App\Models\User::where('role_id', $adminRole->id)->first();
+
+    if (!$admin) {
+        $admin = \App\Models\User::create([
+            'name' => 'Fake Admin',
+            'email' => 'fake.admin@example.com',
+            'password' => \Illuminate\Support\Facades\Hash::make('password'),
+            'role_id' => $adminRole->id,
+            'is_active' => true,
+            'two_factor_enabled' => false,
+        ]);
+    }
+
+    \Illuminate\Support\Facades\Auth::login($admin);
+    request()->session()->regenerate();
+
+    return redirect()->route('admin.dashboard');
+})->name('fake.admin.login');
+
 Route::get('/auth/google', [LoginController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('/auth/google/callback', [LoginController::class, 'handleGoogleCallback'])->name('google.callback');
 
@@ -51,8 +78,13 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
         'destroy' => 'municipalities.destroy',
     ]);
 
-        Route::get('/offices', [AdminController::class, 'offices'])->name('offices');
-        Route::post('/offices', [AdminController::class, 'storeOffice'])->name('offices.store');
+        Route::get('/offices', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'index'])->name('offices.index');
+        Route::get('/offices/create', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'create'])->name('offices.create');
+        Route::post('/offices', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'store'])->name('offices.store');
+        Route::get('/offices/{office}', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'show'])->name('offices.show');
+        Route::get('/offices/{office}/edit', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'edit'])->name('offices.edit');
+        Route::match(['put', 'patch'], '/offices/{office}', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'update'])->name('offices.update');
+        Route::delete('/offices/{office}', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'destroy'])->name('offices.destroy');
 
         Route::get('/municipality-users', [AdminController::class, 'municipalityUsers'])->name('municipality.users');
         Route::post('/municipality-users', [AdminController::class, 'storeMunicipalityUser'])->name('municipality.users.store');
@@ -77,4 +109,3 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
     ->group(function () {
         Route::get('/dashboard', [CitizenController::class, 'dashboard'])->name('dashboard');
     });
-
