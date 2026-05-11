@@ -35,10 +35,11 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label>Phone</label>
+                            <label>Phone <span class="text-danger">*</span></label>
                             <input type="text" name="phone"
                                    value="{{ old('phone', $municipality->phone) }}"
-                                   class="form-control @error('phone') is-invalid @enderror">
+                                   class="form-control @error('phone') is-invalid @enderror"
+                                   placeholder="03XXXXXX, 70XXXXXX, or +96170XXXXXX" required>
                             @error('phone')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -106,6 +107,8 @@
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror
                 </div>
+
+                @include('Admin.municipalities._map_picker', ['municipality' => $municipality])
 
                 {{-- Status & Notes --}}
                 <h5 class="mb-3 mt-4 border-bottom pb-2">Status & Notes</h5>
@@ -229,15 +232,22 @@
 
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     document.querySelectorAll('.day-toggle').forEach(function(checkbox) {
         checkbox.addEventListener('change', function() {
             const day = this.id.replace('open_', '');
             document.querySelectorAll('.time-input-' + day).forEach(function(input) {
                 input.disabled = !checkbox.checked;
+                if (checkbox.checked) {
+                    input.setAttribute('required', 'required');
+                } else {
+                    input.removeAttribute('required');
+                }
             });
         });
+
+        checkbox.dispatchEvent(new Event('change'));
     });
 </script>
-@endsection
+@endpush

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Municipality;
 use App\Models\MunicipalityWorkingHour;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class MunicipalityController extends Controller
 {
@@ -42,16 +43,22 @@ class MunicipalityController extends Controller
     {
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
-            'phone'           => ['required', 'string', 'max:50', 'regex:/^(?:0(?:1|3|5|70|71|76|78|79|81)\d{6}|\+961(?:1|3|5|70|71|76|78|79|81)\d{6})$/'],
-            'email'           => 'nullable|email|max:255',
+            'phone'           => ['required', 'string', 'max:50', 'regex:/^(?:0(?:1|3|5)\d{6}|(?:70|71|76|78|79|81)\d{6}|\+961(?:1|3|5|70|71|76|78|79|81)\d{6})$/', 'unique:municipalities,phone'],
+            'email'           => 'nullable|email|max:255|unique:municipalities,email',
             'city'            => 'required|string|max:255',
             'street'          => 'required|string|max:255',
             'building'        => 'nullable|string|max:255',
             'google_maps_url' => 'nullable|url|max:1000',
+            'latitude'        => 'nullable|numeric|between:-90,90',
+            'longitude'       => 'nullable|numeric|between:-180,180',
+            'place_id'        => 'nullable|string|max:255',
+            'formatted_address' => 'nullable|string|max:1000',
             'status'          => 'required|in:active,inactive',
             'notes'           => 'nullable|string',
         ], [
             'phone.regex' => 'Please enter a valid Lebanese phone number.',
+            'phone.unique' => 'This phone number is already used by another municipality.',
+            'email.unique' => 'This email is already used by another municipality.',
         ]);
 
         $hoursInput = $request->input('working_hours', []);
@@ -119,14 +126,33 @@ class MunicipalityController extends Controller
     {
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
-            'phone'           => 'nullable|string|max:50',
-            'email'           => 'nullable|email|max:255',
+            'phone'           => [
+                'required',
+                'string',
+                'max:50',
+                'regex:/^(?:0(?:1|3|5)\d{6}|(?:70|71|76|78|79|81)\d{6}|\+961(?:1|3|5|70|71|76|78|79|81)\d{6})$/',
+                Rule::unique('municipalities', 'phone')->ignore($municipality->id),
+            ],
+            'email'           => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('municipalities', 'email')->ignore($municipality->id),
+            ],
             'city'            => 'nullable|string|max:255',
             'street'          => 'nullable|string|max:255',
             'building'        => 'nullable|string|max:255',
-            'google_maps_url' => 'nullable|url|max:2048',
+            'google_maps_url' => 'nullable|url|max:1000',
+            'latitude'        => 'nullable|numeric|between:-90,90',
+            'longitude'       => 'nullable|numeric|between:-180,180',
+            'place_id'        => 'nullable|string|max:255',
+            'formatted_address' => 'nullable|string|max:1000',
             'status'          => 'required|in:active,inactive',
             'notes'           => 'nullable|string',
+        ], [
+            'phone.regex' => 'Please enter a valid Lebanese phone number.',
+            'phone.unique' => 'This phone number is already used by another municipality.',
+            'email.unique' => 'This email is already used by another municipality.',
         ]);
 
         // Validate working hours when day is open

@@ -109,6 +109,20 @@
                             </td>
                         </tr>
                         <tr>
+                            <th>Selected Map Address</th>
+                            <td>{{ $municipality->formatted_address ?? '—' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Coordinates</th>
+                            <td>
+                                @if($municipality->latitude && $municipality->longitude)
+                                    {{ $municipality->latitude }}, {{ $municipality->longitude }}
+                                @else
+                                    —
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
                             <th>Notes</th>
                             <td>{{ $municipality->notes ?? '—' }}</td>
                         </tr>
@@ -123,6 +137,22 @@
                     </table>
                 </div>
             </div>
+
+            @php
+                $mapsKey = config('services.google.maps_key');
+            @endphp
+            @if($mapsKey && $municipality->latitude && $municipality->longitude)
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-map-marker-alt"></i> Map Preview
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="municipality_details_map" class="border rounded" style="height: 300px; width: 100%;"></div>
+                    </div>
+                </div>
+            @endif
 
             {{-- Working Hours Card --}}
             <div class="card mt-3">
@@ -215,3 +245,27 @@
     </div>
 
 @endsection
+
+@if(config('services.google.maps_key') && $municipality->latitude && $municipality->longitude)
+    @push('scripts')
+        <script>
+            function initMunicipalityDetailsMap() {
+                const position = {
+                    lat: {{ $municipality->latitude }},
+                    lng: {{ $municipality->longitude }},
+                };
+
+                const map = new google.maps.Map(document.getElementById('municipality_details_map'), {
+                    center: position,
+                    zoom: 16,
+                });
+
+                new google.maps.Marker({
+                    map: map,
+                    position: position,
+                });
+            }
+        </script>
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_key') }}&callback=initMunicipalityDetailsMap"></script>
+    @endpush
+@endif

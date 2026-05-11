@@ -15,6 +15,10 @@ class Municipality extends Model
         'street',
         'building',
         'google_maps_url',
+        'latitude',
+        'longitude',
+        'place_id',
+        'formatted_address',
         'status',
         'notes',
     ];

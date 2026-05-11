@@ -36,7 +36,7 @@
                             <label>Phone <span class="text-danger">*</span></label>
                             <input type="text" name="phone" value="{{ old('phone') }}"
                                    class="form-control @error('phone') is-invalid @enderror"
-                                   placeholder="03XXXXXX or +9613XXXXXX" required>
+                                   placeholder="03XXXXXX, 70XXXXXX, or +96170XXXXXX" required>
                             @error('phone')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -99,6 +99,8 @@
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror
                 </div>
+
+                @include('Admin.municipalities._map_picker')
 
                 {{-- Status & Notes --}}
                 <h5 class="mb-3 mt-4 border-bottom pb-2">Status & Notes</h5>
