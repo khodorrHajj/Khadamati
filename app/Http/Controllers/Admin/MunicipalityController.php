@@ -42,25 +42,33 @@ class MunicipalityController extends Controller
     {
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
-            'phone'           => 'nullable|string|max:50',
+            'phone'           => ['required', 'string', 'max:50', 'regex:/^(?:0(?:1|3|5|70|71|76|78|79|81)\d{6}|\+961(?:1|3|5|70|71|76|78|79|81)\d{6})$/'],
             'email'           => 'nullable|email|max:255',
-            'city'            => 'nullable|string|max:255',
-            'street'          => 'nullable|string|max:255',
+            'city'            => 'required|string|max:255',
+            'street'          => 'required|string|max:255',
             'building'        => 'nullable|string|max:255',
-            'google_maps_url' => 'nullable|url|max:2048',
+            'google_maps_url' => 'nullable|url|max:1000',
             'status'          => 'required|in:active,inactive',
             'notes'           => 'nullable|string',
+        ], [
+            'phone.regex' => 'Please enter a valid Lebanese phone number.',
         ]);
 
         $hoursInput = $request->input('working_hours', []);
         foreach ($this->days as $day) {
             $dayData = $hoursInput[$day] ?? [];
+            $request->validate([
+                "working_hours.{$day}.is_open" => 'required|boolean',
+                "working_hours.{$day}.start_time" => 'nullable|date_format:H:i',
+                "working_hours.{$day}.end_time" => 'nullable|date_format:H:i',
+            ]);
+
             $isOpen  = isset($dayData['is_open']) && $dayData['is_open'];
 
             if ($isOpen) {
                 $request->validate([
-                    "working_hours.{$day}.start_time" => 'required',
-                    "working_hours.{$day}.end_time"   => 'required',
+                    "working_hours.{$day}.start_time" => 'required|date_format:H:i',
+                    "working_hours.{$day}.end_time"   => 'required|date_format:H:i',
                 ], [
                     "working_hours.{$day}.start_time.required" => "{$day}: start time is required when day is open.",
                     "working_hours.{$day}.end_time.required"   => "{$day}: end time is required when day is open.",
@@ -181,21 +189,11 @@ class MunicipalityController extends Controller
 
     private function saveWorkingHours(Municipality $municipality, array $hoursInput)
     {
-        $defaults = [
-            'Monday'    => true,
-            'Tuesday'   => true,
-            'Wednesday' => true,
-            'Thursday'  => true,
-            'Friday'    => true,
-            'Saturday'  => false,
-            'Sunday'    => false,
-        ];
-
         foreach ($this->days as $day) {
             $dayData  = $hoursInput[$day] ?? [];
-            $isOpen   = isset($dayData['is_open']) ? (bool)$dayData['is_open'] : $defaults[$day];
-            $start    = $isOpen ? ($dayData['start_time'] ?? '08:00') : null;
-            $end      = $isOpen ? ($dayData['end_time']   ?? '14:00') : null;
+            $isOpen   = isset($dayData['is_open']) && (bool)$dayData['is_open'];
+            $start    = $isOpen ? ($dayData['start_time'] ?? null) : null;
+            $end      = $isOpen ? ($dayData['end_time']   ?? null) : null;
 
             MunicipalityWorkingHour::create([
                 'municipality_id' => $municipality->id,

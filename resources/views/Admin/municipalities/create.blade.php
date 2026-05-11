@@ -33,9 +33,10 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label>Phone</label>
+                            <label>Phone <span class="text-danger">*</span></label>
                             <input type="text" name="phone" value="{{ old('phone') }}"
-                                   class="form-control @error('phone') is-invalid @enderror">
+                                   class="form-control @error('phone') is-invalid @enderror"
+                                   placeholder="03XXXXXX or +9613XXXXXX" required>
                             @error('phone')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -59,9 +60,9 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>City</label>
+                            <label>City <span class="text-danger">*</span></label>
                             <input type="text" name="city" value="{{ old('city') }}"
-                                   class="form-control @error('city') is-invalid @enderror">
+                                   class="form-control @error('city') is-invalid @enderror" required>
                             @error('city')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -69,9 +70,9 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Street</label>
+                            <label>Street <span class="text-danger">*</span></label>
                             <input type="text" name="street" value="{{ old('street') }}"
-                                   class="form-control @error('street') is-invalid @enderror">
+                                   class="form-control @error('street') is-invalid @enderror" required>
                             @error('street')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -106,7 +107,7 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Status <span class="text-danger">*</span></label>
-                            <select name="status" class="form-control @error('status') is-invalid @enderror">
+                            <select name="status" class="form-control @error('status') is-invalid @enderror" required>
                                 <option value="active"   {{ old('status', 'active') === 'active'   ? 'selected' : '' }}>Active</option>
                                 <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                             </select>
@@ -168,6 +169,11 @@
                                     <td class="text-center">
                                         <div class="custom-control custom-checkbox">
                                             <input
+                                                type="hidden"
+                                                name="working_hours[{{ $day }}][is_open]"
+                                                value="0"
+                                            >
+                                            <input
                                                 type="checkbox"
                                                 class="custom-control-input day-toggle"
                                                 id="open_{{ $day }}"
@@ -183,18 +189,24 @@
                                             type="time"
                                             name="working_hours[{{ $day }}][start_time]"
                                             value="{{ old("working_hours.{$day}.start_time", '08:00') }}"
-                                            class="form-control time-input-{{ $day }}"
+                                            class="form-control time-input-{{ $day }} @error("working_hours.{$day}.start_time") is-invalid @enderror"
                                             {{ $oldIsOpen == '1' ? '' : 'disabled' }}
                                         >
+                                        @error("working_hours.{$day}.start_time")
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @enderror
                                     </td>
                                     <td>
                                         <input
                                             type="time"
                                             name="working_hours[{{ $day }}][end_time]"
                                             value="{{ old("working_hours.{$day}.end_time", '14:00') }}"
-                                            class="form-control time-input-{{ $day }}"
+                                            class="form-control time-input-{{ $day }} @error("working_hours.{$day}.end_time") is-invalid @enderror"
                                             {{ $oldIsOpen == '1' ? '' : 'disabled' }}
                                         >
+                                        @error("working_hours.{$day}.end_time")
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @enderror
                                     </td>
                                 </tr>
                             @endforeach
@@ -218,15 +230,22 @@
 
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     document.querySelectorAll('.day-toggle').forEach(function(checkbox) {
         checkbox.addEventListener('change', function() {
             const day = this.id.replace('open_', '');
             document.querySelectorAll('.time-input-' + day).forEach(function(input) {
                 input.disabled = !checkbox.checked;
+                if (checkbox.checked) {
+                    input.setAttribute('required', 'required');
+                } else {
+                    input.removeAttribute('required');
+                }
             });
         });
+
+        checkbox.dispatchEvent(new Event('change'));
     });
 </script>
-@endsection
+@endpush

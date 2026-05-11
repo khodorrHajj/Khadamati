@@ -13,7 +13,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('admin.municipalities') }}" class="nav-link {{ request()->is('admin/municipalities') ? 'active' : '' }}">
+                    <a href="{{ route('admin.municipalities.index') }}" class="nav-link {{ request()->is('admin/municipalities*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-city"></i>
                         <p>Manage Municipalities</p>
                     </a>

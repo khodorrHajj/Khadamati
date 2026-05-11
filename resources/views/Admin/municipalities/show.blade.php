@@ -154,14 +154,14 @@
                                     </td>
                                     <td>
                                         @if($wh->is_open && $wh->start_time)
-                                            {{ \Carbon\Carbon::createFromFormat('H:i:s', $wh->start_time)->format('h:i A') }}
+                                            {{ \Carbon\Carbon::parse($wh->start_time)->format('h:i A') }}
                                         @else
                                             —
                                         @endif
                                     </td>
                                     <td>
                                         @if($wh->is_open && $wh->end_time)
-                                            {{ \Carbon\Carbon::createFromFormat('H:i:s', $wh->end_time)->format('h:i A') }}
+                                            {{ \Carbon\Carbon::parse($wh->end_time)->format('h:i A') }}
                                         @else
                                             —
                                         @endif

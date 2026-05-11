@@ -39,7 +39,7 @@
                 <div class="icon">
                     <i class="fas fa-city"></i>
                 </div>
-                <a href="{{ route('admin.municipalities') }}" class="small-box-footer">
+                <a href="{{ route('admin.municipalities.index') }}" class="small-box-footer">
                     Open <i class="fas fa-arrow-circle-right"></i>
                 </a>
             </div>
