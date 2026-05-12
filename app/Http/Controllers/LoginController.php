@@ -253,85 +253,88 @@ class LoginController extends Controller
     }
 
     public function home()
-{
-    if (Auth::user()->hasRole('admin')) {
-        return redirect()->route('admin.dashboard');
-    }
+    {
+        if (Auth::user()->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        }
 
-    if (Auth::user()->hasRole('municipality')) {
-        return redirect()->route('municipality.dashboard');
-    }
+        if (Auth::user()->hasRole('municipality')) {
+            return redirect()->route('municipality.dashboard');
+        }
 
-    if (Auth::user()->hasRole('citizen')) {
-        return redirect()->route('citizen.dashboard');
-    }
+        if (Auth::user()->hasRole('citizen')) {
+            return redirect()->route('citizen.dashboard');
+        }
 
-    return abort(403);
-}
+        return abort(403);
+    }
 
     public function redirectToGoogle()
-{
-    return Socialite::driver('google')->redirect();
-}
-
-public function handleGoogleCallback(Request $request)
-{
-    try {
-        $googleUser = Socialite::driver('google')->user();
-    } catch (Throwable $e) {
-        return redirect()->route('login')->withErrors([
-            'google' => 'Google login failed. Please try again.',
-        ]);
+    {
+        return Socialite::driver('google')->redirect();
     }
 
-    $citizenRole = Role::where('role', 'citizen')->first();
+    public function handleGoogleCallback(Request $request)
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (Throwable $e) {
+            return redirect()->route('login')->withErrors([
+                'google' => 'Google login failed. Please try again.',
+            ]);
+        }
 
-    if (!$citizenRole) {
-        return redirect()->route('login')->withErrors([
-            'role' => 'Citizen role does not exist. Please insert roles in the database first.',
-        ]);
+        $citizenRole = Role::where('role', 'citizen')->first();
+
+        if (!$citizenRole) {
+            return redirect()->route('login')->withErrors([
+                'role' => 'Citizen role does not exist. Please insert roles in the database first.',
+            ]);
+        }
+
+        $user = User::where('google_id', $googleUser->getId())->first();
+        $existingEmailUser = User::where('email', $googleUser->getEmail())->first();
+
+        if (!$user && $existingEmailUser) {
+            if ($existingEmailUser->role_id !== $citizenRole->id) {
+                return redirect()->route('login')->withErrors([
+                    'google' => 'This Google account email is already registered with a different user type.',
+                ]);
+            }
+
+            $user = $existingEmailUser;
+        }
+
+        if ($user) {
+            $user->google_id = $googleUser->getId();
+            $user->avatar = $googleUser->getAvatar();
+            $user->email_verified_at = now();
+            $user->two_factor_enabled = false;
+            $user->save();
+        } else {
+            $user = new User();
+            $user->name = $googleUser->getName();
+            $user->email = $googleUser->getEmail();
+            $user->password = null;
+            $user->role_id = $citizenRole->id;
+            $user->is_active = true;
+            $user->google_id = $googleUser->getId();
+            $user->avatar = $googleUser->getAvatar();
+            $user->email_verified_at = now();
+            $user->two_factor_enabled = false;
+            $user->save();
+        }
+
+        if (!$user->is_active) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your account is deactivated.',
+            ]);
+        }
+
+        Auth::login($user);
+
+        $request->session()->regenerate();
+
+        return redirect()->route('home');
     }
-
-    $user = User::where('google_id', $googleUser->getId())->first();
-
-    if (!$user) {
-        $user = User::where('email', $googleUser->getEmail())->first();
-    }
-
-    if ($user) {
-        $user->google_id = $googleUser->getId();
-        $user->avatar = $googleUser->getAvatar();
-        $user->email_verified_at = now();
-        $user->save();
-    } else {
-        $user = new User();
-
-        $user->name = $googleUser->getName();
-        $user->email = $googleUser->getEmail();
-        $user->password = null;
-        $user->role_id = $citizenRole->id;
-        $user->is_active = true;
-
-        $user->google_id = $googleUser->getId();
-        $user->avatar = $googleUser->getAvatar();
-        $user->email_verified_at = now();
-
-        // Google users do not need our email/password 2FA.
-        $user->two_factor_enabled = false;
-
-        $user->save();
-    }
-
-    if (!$user->is_active) {
-        return redirect()->route('login')->withErrors([
-            'email' => 'Your account is deactivated.',
-        ]);
-    }
-
-    Auth::login($user);
-
-    $request->session()->regenerate();
-
-    return redirect()->route('home');
-}
 }
