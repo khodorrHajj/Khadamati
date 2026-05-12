@@ -88,6 +88,7 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
 
         Route::get('/municipality-users', [AdminController::class, 'municipalityUsers'])->name('municipality.users');
         Route::post('/municipality-users', [AdminController::class, 'storeMunicipalityUser'])->name('municipality.users.store');
+        Route::patch('/municipality-users/{user}/toggle-status', [AdminController::class, 'toggleMunicipalityUserStatus'])->name('municipality.users.toggle-status');
     });
 
 Route::middleware(['checkIfConnected', 'checkRole:municipality'])
