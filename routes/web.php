@@ -16,33 +16,6 @@ Route::post('/register', [LoginController::class, 'register'])->name('register')
 Route::get('/login', [LoginController::class, 'login'])->name('login');
 Route::post('/dologin', [LoginController::class, 'doLogin'])->name('dologin');
 
-// Temporary testing route. Remove when admin testing is finished.
-Route::get('/fake-admin-login', function () {
-    $adminRole = \App\Models\Role::where('role', 'admin')->first();
-
-    if (!$adminRole) {
-        abort(500, 'Admin role does not exist.');
-    }
-
-    $admin = \App\Models\User::where('role_id', $adminRole->id)->first();
-
-    if (!$admin) {
-        $admin = \App\Models\User::create([
-            'name' => 'Fake Admin',
-            'email' => 'fake.admin@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'role_id' => $adminRole->id,
-            'is_active' => true,
-            'two_factor_enabled' => false,
-        ]);
-    }
-
-    \Illuminate\Support\Facades\Auth::login($admin);
-    request()->session()->regenerate();
-
-    return redirect()->route('admin.dashboard');
-})->name('fake.admin.login');
-
 Route::get('/auth/google', [LoginController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('/auth/google/callback', [LoginController::class, 'handleGoogleCallback'])->name('google.callback');
 
@@ -50,11 +23,6 @@ Route::middleware('check2fa')->group(function () {
     Route::get('/2fa', [LoginController::class, 'twoFactorForm'])->name('twofactor.form');
     Route::post('/2fa', [LoginController::class, 'verifyTwoFactor'])->name('twofactor.verify');
     Route::post('/2fa/resend', [LoginController::class, 'resendTwoFactor'])->name('twofactor.resend');
-});
-
-Route::middleware('checkIfConnected')->group(function () {
-    Route::get('/home', [LoginController::class, 'home'])->name('home');
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 });
 
 Route::middleware('checkIfConnected')->group(function () {
@@ -88,6 +56,7 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
 
         Route::get('/municipality-users', [AdminController::class, 'municipalityUsers'])->name('municipality.users');
         Route::post('/municipality-users', [AdminController::class, 'storeMunicipalityUser'])->name('municipality.users.store');
+        Route::patch('/municipality-users/{user}/toggle-status', [AdminController::class, 'toggleMunicipalityUserStatus'])->name('municipality.users.toggle-status');
     });
 
 Route::middleware(['checkIfConnected', 'checkRole:municipality'])

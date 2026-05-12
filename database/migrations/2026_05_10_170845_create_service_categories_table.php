@@ -6,20 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('service_categories', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('government_office_id')
+                ->constrained('government_offices')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
+
+            $table->string('name');
+            $table->text('description')->nullable();
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('service_categories');

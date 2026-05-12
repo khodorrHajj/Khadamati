@@ -38,6 +38,11 @@ class GovernmentOffice extends Model
         return $this->hasMany(User::class, 'government_office_id', 'id');
     }
 
+    public function staff()
+    {
+        return $this->hasMany(User::class, 'government_office_id', 'id');
+    }
+
     public function serviceCategories()
     {
         return $this->hasMany(ServiceCategory::class, 'government_office_id', 'id');
