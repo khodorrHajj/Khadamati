@@ -57,6 +57,11 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
         Route::get('/municipality-users', [AdminController::class, 'municipalityUsers'])->name('municipality.users');
         Route::post('/municipality-users', [AdminController::class, 'storeMunicipalityUser'])->name('municipality.users.store');
         Route::patch('/municipality-users/{user}/toggle-status', [AdminController::class, 'toggleMunicipalityUserStatus'])->name('municipality.users.toggle-status');
+
+        Route::get('/citizens', [AdminController::class, 'citizens'])->name('citizens.index');
+        Route::get('/citizens/{citizen}', [AdminController::class, 'showCitizen'])->name('citizens.show');
+        Route::patch('/citizens/{citizen}/activate', [AdminController::class, 'activateCitizen'])->name('citizens.activate');
+        Route::patch('/citizens/{citizen}/deactivate', [AdminController::class, 'deactivateCitizen'])->name('citizens.deactivate');
     });
 
 Route::middleware(['checkIfConnected', 'checkRole:municipality'])
