@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use App\Models\ServiceRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,7 +12,30 @@ class MunicipalityController extends Controller
 {
     public function dashboard()
     {
-        return view('Municipality.Dashboard');
+        $office = Auth::user()->governmentOffice;
+
+        if (!$office) {
+            return view('Municipality.NoOffice');
+        }
+
+        $totalCategories = ServiceCategory::where('government_office_id', $office->id)->count();
+        $totalServices = Service::where('government_office_id', $office->id)->count();
+        $totalRequests = ServiceRequest::whereHas('service', function ($query) use ($office) {
+            $query->where('government_office_id', $office->id);
+        })->count();
+        $pendingRequests = ServiceRequest::where('status', 'Pending')
+            ->whereHas('service', function ($query) use ($office) {
+                $query->where('government_office_id', $office->id);
+            })
+            ->count();
+
+        return view('Municipality.Dashboard', compact(
+            'office',
+            'totalCategories',
+            'totalServices',
+            'totalRequests',
+            'pendingRequests'
+        ));
     }
 
     public function categories()
