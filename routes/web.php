@@ -30,25 +30,38 @@ Route::middleware('checkIfConnected')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 });
 
-Route::middleware('checkIfConnected')->group(function () {
-    Route::get('/home', [LoginController::class, 'home'])->name('home');
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-});
-
 Route::middleware(['checkIfConnected', 'checkRole:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-        Route::get('/municipalities', [AdminController::class, 'municipalities'])->name('municipalities');
-        Route::post('/municipalities', [AdminController::class, 'storeMunicipality'])->name('municipalities.store');
+        Route::resource('municipalities', \App\Http\Controllers\Admin\MunicipalityController::class)->names([
+        'index'   => 'municipalities.index',
+        'create'  => 'municipalities.create',
+        'store'   => 'municipalities.store',
+        'show'    => 'municipalities.show',
+        'edit'    => 'municipalities.edit',
+        'update'  => 'municipalities.update',
+        'destroy' => 'municipalities.destroy',
+    ]);
 
-        Route::get('/offices', [AdminController::class, 'offices'])->name('offices');
-        Route::post('/offices', [AdminController::class, 'storeOffice'])->name('offices.store');
+        Route::get('/offices', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'index'])->name('offices.index');
+        Route::get('/offices/create', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'create'])->name('offices.create');
+        Route::post('/offices', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'store'])->name('offices.store');
+        Route::get('/offices/{office}', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'show'])->name('offices.show');
+        Route::get('/offices/{office}/edit', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'edit'])->name('offices.edit');
+        Route::match(['put', 'patch'], '/offices/{office}', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'update'])->name('offices.update');
+        Route::delete('/offices/{office}', [\App\Http\Controllers\Admin\GovernmentOfficeController::class, 'destroy'])->name('offices.destroy');
 
         Route::get('/municipality-users', [AdminController::class, 'municipalityUsers'])->name('municipality.users');
         Route::post('/municipality-users', [AdminController::class, 'storeMunicipalityUser'])->name('municipality.users.store');
+        Route::patch('/municipality-users/{user}/toggle-status', [AdminController::class, 'toggleMunicipalityUserStatus'])->name('municipality.users.toggle-status');
+
+        Route::get('/citizens', [AdminController::class, 'citizens'])->name('citizens.index');
+        Route::get('/citizens/{citizen}', [AdminController::class, 'showCitizen'])->name('citizens.show');
+        Route::patch('/citizens/{citizen}/activate', [AdminController::class, 'activateCitizen'])->name('citizens.activate');
+        Route::patch('/citizens/{citizen}/deactivate', [AdminController::class, 'deactivateCitizen'])->name('citizens.deactivate');
     });
 
 Route::middleware(['checkIfConnected', 'checkRole:municipality'])
@@ -70,4 +83,3 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
     ->group(function () {
         Route::get('/dashboard', [CitizenController::class, 'dashboard'])->name('dashboard');
     });
-
