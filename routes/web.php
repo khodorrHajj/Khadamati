@@ -70,8 +70,15 @@ Route::middleware(['checkIfConnected', 'checkRole:municipality'])
     ->group(function () {
         Route::get('/dashboard', [MunicipalityController::class, 'dashboard'])->name('dashboard');
 
-        Route::get('/categories', [MunicipalityController::class, 'categories'])->name('categories');
-        Route::post('/categories', [MunicipalityController::class, 'storeCategory'])->name('categories.store');
+        Route::get('/office', [\App\Http\Controllers\Municipality\OfficeProfileController::class, 'show'])->name('office.show');
+        Route::get('/office/edit', [\App\Http\Controllers\Municipality\OfficeProfileController::class, 'edit'])->name('office.edit');
+        Route::match(['put', 'patch'], '/office', [\App\Http\Controllers\Municipality\OfficeProfileController::class, 'update'])->name('office.update');
+
+        Route::get('/categories', [\App\Http\Controllers\Municipality\ServiceCategoryController::class, 'index'])->name('categories');
+        Route::post('/categories', [\App\Http\Controllers\Municipality\ServiceCategoryController::class, 'store'])->name('categories.store');
+        Route::get('/categories/{category}/edit', [\App\Http\Controllers\Municipality\ServiceCategoryController::class, 'edit'])->name('categories.edit');
+        Route::match(['put', 'patch'], '/categories/{category}', [\App\Http\Controllers\Municipality\ServiceCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categories/{category}', [\App\Http\Controllers\Municipality\ServiceCategoryController::class, 'destroy'])->name('categories.destroy');
 
         Route::get('/services', [MunicipalityController::class, 'services'])->name('services');
         Route::post('/services', [MunicipalityController::class, 'storeService'])->name('services.store');

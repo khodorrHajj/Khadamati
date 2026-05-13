@@ -13,7 +13,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link disabled" aria-disabled="true">
+                    <a href="{{ route('municipality.office.show') }}" class="nav-link {{ request()->routeIs('municipality.office.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-building"></i>
                         <p>Office Profile</p>
                     </a>
