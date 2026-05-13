@@ -1,61 +1,101 @@
-<div>
-    <!-- The whole future lies in uncertainty: live immediately. - Seneca -->
-</div>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Signup</title>
-</head>
-<body>
+@extends('layouts.auth')
 
-    <h1>Create Account</h1>
+@section('title', 'Sign Up')
 
-    @if ($errors->any())
-        <div style="color: red;">
-            @foreach ($errors->all() as $error)
-                <p>{{ $error }}</p>
-            @endforeach
+@section('content')
+    <div class="login-logo">
+        <a href="{{ route('signup') }}"><b>E</b>-Services</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body login-card-body">
+            <p class="login-box-msg">Create your account</p>
+
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    @foreach ($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('register') }}">
+                @csrf
+
+                <div class="input-group mb-3">
+                    <input
+                        type="text"
+                        name="name"
+                        value="{{ old('name') }}"
+                        class="form-control @error('name') is-invalid @enderror"
+                        placeholder="Name"
+                    >
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-user"></span>
+                        </div>
+                    </div>
+                    @error('name')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="input-group mb-3">
+                    <input
+                        type="email"
+                        name="email"
+                        value="{{ old('email') }}"
+                        class="form-control @error('email') is-invalid @enderror"
+                        placeholder="Email"
+                    >
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-envelope"></span>
+                        </div>
+                    </div>
+                    @error('email')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="input-group mb-3">
+                    <input
+                        type="password"
+                        name="password"
+                        class="form-control @error('password') is-invalid @enderror"
+                        placeholder="Password"
+                    >
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-lock"></span>
+                        </div>
+                    </div>
+                    @error('password')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="input-group mb-3">
+                    <input
+                        type="password"
+                        name="password_confirmation"
+                        class="form-control"
+                        placeholder="Confirm Password"
+                    >
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-lock"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+            </form>
+
+            <p class="mb-0 mt-3">
+                Already have an account?
+                <a href="{{ route('login') }}">Login</a>
+            </p>
         </div>
-    @endif
-
-    <form method="POST" action="{{ route('register') }}">
-        @csrf
-
-        <div>
-            <label>Name</label>
-            <input type="text" name="name" value="{{ old('name') }}">
-        </div>
-
-        <br>
-
-        <div>
-            <label>Email</label>
-            <input type="email" name="email" value="{{ old('email') }}">
-        </div>
-
-        <br>
-
-        <div>
-            <label>Password</label>
-            <input type="password" name="password">
-        </div>
-
-        <br>
-
-        <div>
-            <label>Confirm Password</label>
-            <input type="password" name="password_confirmation">
-        </div>
-
-        <br>
-
-        <button type="submit">Register</button>
-    </form>
-
-    <p>
-        Already have an account?
-        <a href="{{ route('login') }}">Login</a>
-    </p>
-
-</body>
-</html>
+    </div>
+@endsection

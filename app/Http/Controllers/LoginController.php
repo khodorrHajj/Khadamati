@@ -20,7 +20,7 @@ class LoginController extends Controller
 
     public function register(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|confirmed|min:6',
@@ -34,24 +34,24 @@ class LoginController extends Controller
             ]);
         }
 
-        $user = new User();
+        $code = random_int(100000, 999999);
 
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->password = Hash::make($request->password);
-        $user->role_id = $citizenRole->id;
-        $user->is_active = true;
+        $request->session()->put('pending_registration', [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role_id' => $citizenRole->id,
+            'code' => Hash::make($code),
+            'expires_at' => now()->addMinutes(10)->toDateTimeString(),
+        ]);
 
-        // Email/password users will use 2FA.
-        $user->two_factor_enabled = true;
+        Mail::raw("Your verification code is: " . $code, function ($message) use ($validated) {
+            $message->to($validated['email']);
+            $message->subject('Verify Your E-Services Account');
+        });
 
-        // Google login fields for later.
-        $user->google_id = null;
-        $user->avatar = null;
-
-        $user->save();
-
-        return redirect()->route('login')->with('success', 'Account created successfully');
+        return redirect()->route('twofactor.form')
+            ->with('success', 'A verification code was sent to your email.');
     }
 
     public function login()
@@ -107,6 +107,10 @@ class LoginController extends Controller
             'code' => 'required|digits:6',
         ]);
 
+        if ($request->session()->has('pending_registration')) {
+            return $this->verifyPendingRegistration($request);
+        }
+
         $userId = $request->session()->get('two_factor_user_id');
 
         $user = User::find($userId);
@@ -147,6 +151,23 @@ class LoginController extends Controller
 
     public function resendTwoFactor(Request $request)
     {
+        if ($request->session()->has('pending_registration')) {
+            $pendingRegistration = $request->session()->get('pending_registration');
+            $code = random_int(100000, 999999);
+
+            $pendingRegistration['code'] = Hash::make($code);
+            $pendingRegistration['expires_at'] = now()->addMinutes(10)->toDateTimeString();
+
+            $request->session()->put('pending_registration', $pendingRegistration);
+
+            Mail::raw("Your verification code is: " . $code, function ($message) use ($pendingRegistration) {
+                $message->to($pendingRegistration['email']);
+                $message->subject('Verify Your E-Services Account');
+            });
+
+            return redirect()->back()->with('success', 'A new verification code was sent.');
+        }
+
         $userId = $request->session()->get('two_factor_user_id');
 
         $user = User::find($userId);
@@ -158,6 +179,52 @@ class LoginController extends Controller
         $this->sendTwoFactorCode($user);
 
         return redirect()->back()->with('success', 'A new verification code was sent.');
+    }
+
+    private function verifyPendingRegistration(Request $request)
+    {
+        $pendingRegistration = $request->session()->get('pending_registration');
+
+        if (now()->greaterThan(\Carbon\Carbon::parse($pendingRegistration['expires_at']))) {
+            return redirect()->back()->withErrors([
+                'code' => 'The verification code has expired. Please request a new one.',
+            ]);
+        }
+
+        if (!Hash::check($request->code, $pendingRegistration['code'])) {
+            return redirect()->back()->withErrors([
+                'code' => 'Invalid verification code.',
+            ]);
+        }
+
+        if (User::where('email', $pendingRegistration['email'])->exists()) {
+            $request->session()->forget('pending_registration');
+
+            return redirect()->route('signup')->withErrors([
+                'email' => 'An account with this email already exists.',
+            ]);
+        }
+
+        $user = new User();
+
+        $user->name = $pendingRegistration['name'];
+        $user->email = $pendingRegistration['email'];
+        $user->password = $pendingRegistration['password'];
+        $user->role_id = $pendingRegistration['role_id'];
+        $user->is_active = true;
+        $user->email_verified_at = now();
+        $user->google_id = null;
+        $user->avatar = null;
+        $user->two_factor_enabled = true;
+
+        $user->save();
+
+        $request->session()->forget('pending_registration');
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('citizen.dashboard');
     }
 
     private function sendTwoFactorCode(User $user)
@@ -187,72 +254,87 @@ class LoginController extends Controller
 
     public function home()
     {
-        return view('Authentication.Home');
+        if (Auth::user()->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if (Auth::user()->hasRole('municipality')) {
+            return redirect()->route('municipality.dashboard');
+        }
+
+        if (Auth::user()->hasRole('citizen')) {
+            return redirect()->route('citizen.dashboard');
+        }
+
+        return abort(403);
     }
 
     public function redirectToGoogle()
-{
-    return Socialite::driver('google')->redirect();
-}
-
-public function handleGoogleCallback(Request $request)
-{
-    try {
-        $googleUser = Socialite::driver('google')->user();
-    } catch (Throwable $e) {
-        return redirect()->route('login')->withErrors([
-            'google' => 'Google login failed. Please try again.',
-        ]);
+    {
+        return Socialite::driver('google')->redirect();
     }
 
-    $citizenRole = Role::where('role', 'citizen')->first();
+    public function handleGoogleCallback(Request $request)
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (Throwable $e) {
+            return redirect()->route('login')->withErrors([
+                'google' => 'Google login failed. Please try again.',
+            ]);
+        }
 
-    if (!$citizenRole) {
-        return redirect()->route('login')->withErrors([
-            'role' => 'Citizen role does not exist. Please insert roles in the database first.',
-        ]);
+        $citizenRole = Role::where('role', 'citizen')->first();
+
+        if (!$citizenRole) {
+            return redirect()->route('login')->withErrors([
+                'role' => 'Citizen role does not exist. Please insert roles in the database first.',
+            ]);
+        }
+
+        $user = User::where('google_id', $googleUser->getId())->first();
+        $existingEmailUser = User::where('email', $googleUser->getEmail())->first();
+
+        if (!$user && $existingEmailUser) {
+            if ($existingEmailUser->role_id !== $citizenRole->id) {
+                return redirect()->route('login')->withErrors([
+                    'google' => 'This Google account email is already registered with a different user type.',
+                ]);
+            }
+
+            $user = $existingEmailUser;
+        }
+
+        if ($user) {
+            $user->google_id = $googleUser->getId();
+            $user->avatar = $googleUser->getAvatar();
+            $user->email_verified_at = now();
+            $user->two_factor_enabled = false;
+            $user->save();
+        } else {
+            $user = new User();
+            $user->name = $googleUser->getName();
+            $user->email = $googleUser->getEmail();
+            $user->password = null;
+            $user->role_id = $citizenRole->id;
+            $user->is_active = true;
+            $user->google_id = $googleUser->getId();
+            $user->avatar = $googleUser->getAvatar();
+            $user->email_verified_at = now();
+            $user->two_factor_enabled = false;
+            $user->save();
+        }
+
+        if (!$user->is_active) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your account is deactivated.',
+            ]);
+        }
+
+        Auth::login($user);
+
+        $request->session()->regenerate();
+
+        return redirect()->route('home');
     }
-
-    $user = User::where('google_id', $googleUser->getId())->first();
-
-    if (!$user) {
-        $user = User::where('email', $googleUser->getEmail())->first();
-    }
-
-    if ($user) {
-        $user->google_id = $googleUser->getId();
-        $user->avatar = $googleUser->getAvatar();
-        $user->email_verified_at = now();
-        $user->save();
-    } else {
-        $user = new User();
-
-        $user->name = $googleUser->getName();
-        $user->email = $googleUser->getEmail();
-        $user->password = null;
-        $user->role_id = $citizenRole->id;
-        $user->is_active = true;
-
-        $user->google_id = $googleUser->getId();
-        $user->avatar = $googleUser->getAvatar();
-        $user->email_verified_at = now();
-
-        // Google users do not need our email/password 2FA.
-        $user->two_factor_enabled = false;
-
-        $user->save();
-    }
-
-    if (!$user->is_active) {
-        return redirect()->route('login')->withErrors([
-            'email' => 'Your account is deactivated.',
-        ]);
-    }
-
-    Auth::login($user);
-
-    $request->session()->regenerate();
-
-    return redirect()->route('home');
-}
 }

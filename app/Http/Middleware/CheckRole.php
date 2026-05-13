@@ -5,19 +5,32 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, $role)
+    public function handle(Request $request, Closure $next, string $role): Response
     {
-        if (!Auth::check()) {
-            return redirect()->route('login');
-        }
+        if (Auth::check()) {
+            $user = Auth::user();
 
-        if (!Auth::user()->role || Auth::user()->role->role !== $role) {
-            abort(403, 'Unauthorized');
-        }
+            if ($role === 'municipality' && (!$user->is_active || $user->status === 'inactive')) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
 
-        return $next($request);
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Your account is inactive.',
+                ]);
+            }
+
+            if ($user->role && $user->role->role === $role) {
+                return $next($request);
+            } else {
+                return abort(403);
+            }
+        } else {
+            return abort(401);
+        }
     }
 }
