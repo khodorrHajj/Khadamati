@@ -16,6 +16,8 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
         Route::get('/offices', [ServiceCatalogController::class, 'offices'])->name('offices.index');
         Route::get('/offices/{office}', [ServiceCatalogController::class, 'office'])->name('offices.show');
         Route::get('/offices/{office}/categories/{category}', [ServiceCatalogController::class, 'category'])->name('categories.show');
+        Route::get('/services/{service}/request', [ServiceCatalogController::class, 'createRequest'])->name('services.request.create');
+        Route::post('/services/{service}/request', [ServiceCatalogController::class, 'storeRequest'])->name('services.request.store');
         Route::get('/services/{service}', [ServiceCatalogController::class, 'service'])->name('services.show');
         Route::post('/services/{service}/requests', [ServiceCatalogController::class, 'storeRequest'])->name('requests.store');
         Route::get('/requests/{serviceRequest}', [ServiceCatalogController::class, 'request'])->name('requests.show');

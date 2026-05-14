@@ -143,6 +143,14 @@ class ServiceCatalogController extends Controller
         return view('Citizen.services.show', compact('service'));
     }
 
+    public function createRequest(Service $service)
+    {
+        $service->load(['governmentOffice.municipality', 'serviceCategory']);
+        $this->ensureActiveService($service);
+
+        return view('Citizen.services.request', compact('service'));
+    }
+
     public function storeRequest(
         StoreServiceRequestRequest $request,
         Service $service,
@@ -167,8 +175,8 @@ class ServiceCatalogController extends Controller
         );
 
         return redirect()
-            ->route('tracking.show', $serviceRequest->tracking_code)
-            ->with('success', 'Request submitted successfully. Keep your tracking code safe.');
+            ->route('citizen.requests.show', $serviceRequest)
+            ->with('success', 'Request submitted successfully. Your tracking code is ' . $serviceRequest->tracking_code . '.');
     }
 
     public function request(ServiceRequest $serviceRequest)

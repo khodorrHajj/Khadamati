@@ -107,7 +107,7 @@
                         </div>
 
                         <div class="mt-auto">
-                            <a href="{{ route('citizen.services.show', $service) }}" class="btn btn-primary btn-block">
+                            <a href="{{ route('citizen.services.request.create', $service) }}" class="btn btn-primary btn-block">
                                 Start Request
                             </a>
                         </div>

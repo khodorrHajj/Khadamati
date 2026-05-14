@@ -67,31 +67,13 @@
         <div class="col-lg-5">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Submit Request</h3>
+                    <h3 class="card-title">Start Request</h3>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('citizen.requests.store', $service) }}" enctype="multipart/form-data">
-                        @csrf
-
-                        <div class="form-group">
-                            <label>Notes</label>
-                            <textarea name="notes" rows="5" class="form-control @error('notes') is-invalid @enderror" placeholder="Optional notes or request details">{{ old('notes') }}</textarea>
-                            @error('notes')
-                                <span class="invalid-feedback d-block">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
-                            <label>Supporting Documents</label>
-                            <input type="file" name="documents[]" multiple class="form-control-file @error('documents.*') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*">
-                            <small class="form-text text-muted">PDF and image files only. Upload the documents listed by the office when available.</small>
-                            @error('documents.*')
-                                <span class="invalid-feedback d-block">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-block">Submit Request</button>
-                    </form>
+                    <p class="text-muted">Review the required documents and add your notes before submitting this request.</p>
+                    <a href="{{ route('citizen.services.request.create', $service) }}" class="btn btn-primary btn-block">
+                        Start Request
+                    </a>
                 </div>
             </div>
         </div>

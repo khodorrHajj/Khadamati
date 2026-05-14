@@ -117,7 +117,7 @@
                             <td>{{ $service->duration_days }} day{{ (int) $service->duration_days === 1 ? '' : 's' }}</td>
                             <td>{{ $service->required_documents ?: 'No required documents listed.' }}</td>
                             <td>
-                                <a href="{{ route('citizen.services.show', $service) }}" class="btn btn-primary btn-sm">
+                                <a href="{{ route('citizen.services.request.create', $service) }}" class="btn btn-primary btn-sm">
                                     Start Request
                                 </a>
                             </td>
