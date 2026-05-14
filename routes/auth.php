@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\IdentityVerificationController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,4 +28,6 @@ Route::middleware('check2fa')->group(function () {
 Route::middleware('checkIfConnected')->group(function () {
     Route::get('/home', [LoginController::class, 'home'])->name('home');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('/identity-verification', [IdentityVerificationController::class, 'create'])->name('identity.verification.create');
+    Route::post('/identity-verification', [IdentityVerificationController::class, 'store'])->name('identity.verification.store');
 });

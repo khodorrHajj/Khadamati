@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CitizenAccountController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GovernmentOfficeController;
+use App\Http\Controllers\Admin\IdentityVerificationController;
 use App\Http\Controllers\Admin\MunicipalityController;
 use App\Http\Controllers\Admin\MunicipalityUserController;
 use App\Http\Controllers\Admin\ReportController;
@@ -40,6 +41,11 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
         Route::get('/citizens/{citizen}', [CitizenAccountController::class, 'show'])->name('citizens.show');
         Route::patch('/citizens/{citizen}/activate', [CitizenAccountController::class, 'activate'])->name('citizens.activate');
         Route::patch('/citizens/{citizen}/deactivate', [CitizenAccountController::class, 'deactivate'])->name('citizens.deactivate');
+
+        Route::get('/identity-verifications', [IdentityVerificationController::class, 'index'])->name('identity-verifications.index');
+        Route::get('/identity-verifications/{verification}', [IdentityVerificationController::class, 'show'])->name('identity-verifications.show');
+        Route::patch('/identity-verifications/{verification}/approve', [IdentityVerificationController::class, 'approve'])->name('identity-verifications.approve');
+        Route::patch('/identity-verifications/{verification}/reject', [IdentityVerificationController::class, 'reject'])->name('identity-verifications.reject');
 
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     });

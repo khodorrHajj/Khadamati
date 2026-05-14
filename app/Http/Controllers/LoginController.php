@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Models\IdentityVerification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -89,6 +90,23 @@ class LoginController extends Controller
             }
 
             return redirect()->route('home');
+        }
+
+        $inactiveCitizen = User::with('role', 'latestIdentityVerification')
+            ->where('email', $request->email)
+            ->first();
+
+        if (
+            $inactiveCitizen
+            && Hash::check($request->password, (string) $inactiveCitizen->password)
+            && $inactiveCitizen->hasRole('citizen')
+            && !$inactiveCitizen->is_active
+            && $inactiveCitizen->latestIdentityVerification?->status !== IdentityVerification::STATUS_APPROVED
+        ) {
+            Auth::login($inactiveCitizen);
+            $request->session()->regenerate();
+
+            return redirect()->route('identity.verification.create');
         }
 
         return redirect()->back()->withErrors([
@@ -211,7 +229,8 @@ class LoginController extends Controller
         $user->email = $pendingRegistration['email'];
         $user->password = $pendingRegistration['password'];
         $user->role_id = $pendingRegistration['role_id'];
-        $user->is_active = true;
+        $user->is_active = false;
+        $user->status = 'inactive';
         $user->email_verified_at = now();
         $user->google_id = null;
         $user->avatar = null;
@@ -224,7 +243,8 @@ class LoginController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('citizen.dashboard');
+        return redirect()->route('identity.verification.create')
+            ->with('success', 'Email verified. Please upload your ID to complete account verification.');
     }
 
     private function sendTwoFactorCode(User $user)
@@ -317,7 +337,8 @@ class LoginController extends Controller
             $user->email = $googleUser->getEmail();
             $user->password = null;
             $user->role_id = $citizenRole->id;
-            $user->is_active = true;
+            $user->is_active = false;
+            $user->status = 'inactive';
             $user->google_id = $googleUser->getId();
             $user->avatar = $googleUser->getAvatar();
             $user->email_verified_at = now();
@@ -325,7 +346,7 @@ class LoginController extends Controller
             $user->save();
         }
 
-        if (!$user->is_active) {
+        if (!$user->is_active && (!$user->hasRole('citizen') || $user->latestIdentityVerification?->status === IdentityVerification::STATUS_APPROVED)) {
             return redirect()->route('login')->withErrors([
                 'email' => 'Your account is deactivated.',
             ]);
@@ -334,6 +355,10 @@ class LoginController extends Controller
         Auth::login($user);
 
         $request->session()->regenerate();
+
+        if ($user->hasRole('citizen') && !$user->is_active) {
+            return redirect()->route('identity.verification.create');
+        }
 
         return redirect()->route('home');
     }

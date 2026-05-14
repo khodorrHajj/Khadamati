@@ -37,6 +37,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('admin.identity-verifications.index') }}" class="nav-link {{ request()->is('admin/identity-verifications*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-id-card"></i>
+                        <p>ID Verification Queue</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('admin.reports.index') }}" class="nav-link {{ request()->is('admin/reports*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-chart-line"></i>
                         <p>Reports</p>

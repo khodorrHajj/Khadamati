@@ -59,6 +59,16 @@ class User extends Authenticatable
         return $this->hasMany(ServiceRequest::class, 'user_id', 'id');
     }
 
+    public function identityVerifications()
+    {
+        return $this->hasMany(IdentityVerification::class, 'user_id', 'id');
+    }
+
+    public function latestIdentityVerification()
+    {
+        return $this->hasOne(IdentityVerification::class, 'user_id', 'id')->latestOfMany();
+    }
+
     public function feedback()
     {
         return $this->hasMany(Feedback::class, 'user_id', 'id');
