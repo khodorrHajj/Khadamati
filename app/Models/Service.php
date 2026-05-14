@@ -17,6 +17,11 @@ class Service extends Model
         'is_active',
     ];
 
+    protected $casts = [
+        'price' => 'decimal:2',
+        'is_active' => 'boolean',
+    ];
+
     public function governmentOffice()
     {
         return $this->belongsTo(GovernmentOffice::class, 'government_office_id', 'id');
@@ -30,5 +35,17 @@ class Service extends Model
     public function serviceRequests()
     {
         return $this->hasMany(ServiceRequest::class, 'service_id', 'id');
+    }
+
+    public function feedback()
+    {
+        return $this->hasManyThrough(
+            Feedback::class,
+            ServiceRequest::class,
+            'service_id',
+            'service_request_id',
+            'id',
+            'id'
+        );
     }
 }

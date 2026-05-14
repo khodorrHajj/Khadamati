@@ -74,5 +74,20 @@
                 </a>
             </div>
         </div>
+
+        <div class="col-lg-4 col-12">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>Reports</h3>
+                    <p>Platform Analytics</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <a href="{{ route('admin.reports.index') }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
     </div>
 @endsection

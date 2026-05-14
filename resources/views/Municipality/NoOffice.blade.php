@@ -1,16 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>No Office Assigned</title>
-</head>
-<body>
+@extends('layouts.municipality')
 
-    <h1>No Government Office Assigned</h1>
+@section('title', 'No Office Assigned')
+@section('page-title', 'No Government Office Assigned')
 
-    <p>Your account is not assigned to any government office yet.</p>
-    <p>Please contact the admin.</p>
-
-    <a href="{{ route('municipality.dashboard') }}">Back to Dashboard</a>
-
-</body>
-</html>
+@section('content')
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Office Assignment Required</h3>
+        </div>
+        <div class="card-body">
+            <p>Your account is not assigned to any government office yet.</p>
+            <p class="mb-0">Please contact the admin.</p>
+        </div>
+    </div>
+@endsection
