@@ -13,7 +13,7 @@
                         <p class="text-muted mb-2">{{ $office->municipality?->name ?? 'Municipality not assigned' }}</p>
                         <p class="mb-3">{{ $office->service_type ?: 'Public services available through this office.' }}</p>
                         <div class="mt-auto">
-                            <a href="{{ route('citizen.offices.show', $office) }}" class="btn btn-primary btn-sm">View Categories</a>
+                            <a href="{{ route('citizen.offices.show', $office) }}" class="btn btn-primary btn-sm">View Office</a>
                         </div>
                     </div>
                 </div>

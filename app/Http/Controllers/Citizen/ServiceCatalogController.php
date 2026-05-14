@@ -7,6 +7,7 @@ use App\Http\Requests\Citizen\StoreRequestDocumentRequest;
 use App\Http\Requests\Citizen\StoreServiceRequestRequest;
 use App\Models\GovernmentOffice;
 use App\Models\Appointment;
+use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\ServiceRequest;
@@ -21,6 +22,66 @@ use Illuminate\Support\Facades\Auth;
 
 class ServiceCatalogController extends Controller
 {
+    public function services(Request $request)
+    {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'municipality' => ['nullable', 'integer', 'exists:municipalities,id'],
+            'office' => ['nullable', 'integer', 'exists:government_offices,id'],
+            'category' => ['nullable', 'integer', 'exists:service_categories,id'],
+        ]);
+
+        $services = Service::with(['governmentOffice.municipality', 'serviceCategory'])
+            ->where('is_active', true)
+            ->whereHas('governmentOffice', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
+            ->when($filters['municipality'] ?? null, function ($query, $municipalityId) {
+                $query->whereHas('governmentOffice', function ($officeQuery) use ($municipalityId) {
+                    $officeQuery->where('municipality_id', $municipalityId);
+                });
+            })
+            ->when($filters['office'] ?? null, function ($query, $officeId) {
+                $query->where('government_office_id', $officeId);
+            })
+            ->when($filters['category'] ?? null, function ($query, $categoryId) {
+                $query->where('service_category_id', $categoryId);
+            })
+            ->orderBy('name')
+            ->paginate(12)
+            ->withQueryString();
+
+        $municipalities = Municipality::whereHas('governmentOffices.services', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->whereHas('governmentOffices', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->orderBy('name')
+            ->get();
+
+        $offices = GovernmentOffice::where('status', 'active')
+            ->whereHas('services', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->orderBy('name')
+            ->get();
+
+        $categories = ServiceCategory::whereHas('governmentOffice', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->whereHas('services', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->orderBy('name')
+            ->get();
+
+        return view('Citizen.services.index', compact('categories', 'filters', 'municipalities', 'offices', 'services'));
+    }
+
     public function offices()
     {
         $offices = GovernmentOffice::with('municipality')
@@ -37,6 +98,7 @@ class ServiceCatalogController extends Controller
     public function office(GovernmentOffice $office)
     {
         $this->ensureActiveOffice($office);
+        $office->load(['municipality', 'workingHours']);
 
         $categories = ServiceCategory::where('government_office_id', $office->id)
             ->whereHas('services', function ($query) {
@@ -50,7 +112,13 @@ class ServiceCatalogController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('Citizen.offices.show', compact('categories', 'office'));
+        $services = Service::with('serviceCategory')
+            ->where('government_office_id', $office->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('Citizen.offices.show', compact('categories', 'office', 'services'));
     }
 
     public function category(GovernmentOffice $office, ServiceCategory $category)

@@ -12,6 +12,7 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
     ->name('citizen.')
     ->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/services', [ServiceCatalogController::class, 'services'])->name('services.index');
         Route::get('/offices', [ServiceCatalogController::class, 'offices'])->name('offices.index');
         Route::get('/offices/{office}', [ServiceCatalogController::class, 'office'])->name('offices.show');
         Route::get('/offices/{office}/categories/{category}', [ServiceCatalogController::class, 'category'])->name('categories.show');

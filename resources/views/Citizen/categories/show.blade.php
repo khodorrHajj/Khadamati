@@ -25,7 +25,7 @@
                             <span>${{ number_format((float) $service->price, 2) }}</span>
                             <span>{{ $service->duration_days }} day{{ $service->duration_days === 1 ? '' : 's' }}</span>
                         </div>
-                        <a href="{{ route('citizen.services.show', $service) }}" class="btn btn-primary btn-sm">View Service</a>
+                        <a href="{{ route('citizen.services.show', $service) }}" class="btn btn-primary btn-sm">Start Request</a>
                     </div>
                 </div>
             </div>
