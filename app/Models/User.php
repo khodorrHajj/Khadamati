@@ -58,4 +58,34 @@ class User extends Authenticatable
     {
         return $this->hasMany(ServiceRequest::class, 'user_id', 'id');
     }
+
+    public function feedback()
+    {
+        return $this->hasMany(Feedback::class, 'user_id', 'id');
+    }
+
+    public function feedbackResponses()
+    {
+        return $this->hasMany(Feedback::class, 'responded_by', 'id');
+    }
+
+    public function sentRequestMessages()
+    {
+        return $this->hasMany(RequestMessage::class, 'sender_id', 'id');
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'user_id', 'id');
+    }
+
+    public function createdTimeSlots()
+    {
+        return $this->hasMany(TimeSlot::class, 'created_by', 'id');
+    }
+
+    public function approvedAppointments()
+    {
+        return $this->hasMany(Appointment::class, 'approved_by', 'id');
+    }
 }

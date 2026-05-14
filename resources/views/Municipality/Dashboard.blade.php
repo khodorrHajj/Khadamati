@@ -69,7 +69,9 @@
                 <div class="icon">
                     <i class="fas fa-file-alt"></i>
                 </div>
-                <span class="small-box-footer">Coming Soon</span>
+                <a href="{{ route('municipality.requests.index') }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
             </div>
         </div>
 
@@ -82,7 +84,54 @@
                 <div class="icon">
                     <i class="fas fa-clock"></i>
                 </div>
-                <span class="small-box-footer">Coming Soon</span>
+                <a href="{{ route('municipality.requests.index', ['status' => 'Pending']) }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+                <div class="inner">
+                    <h3>{{ $inReviewRequests }}</h3>
+                    <p>In Review Requests</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <a href="{{ route('municipality.requests.index', ['status' => 'In Review']) }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ $completedRequests }}</h3>
+                    <p>Completed Requests</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <a href="{{ route('municipality.requests.index', ['status' => 'Completed']) }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-secondary">
+                <div class="inner">
+                    <h3>{{ $missingDocumentsRequests }}</h3>
+                    <p>Missing Documents</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-file-upload"></i>
+                </div>
+                <a href="{{ route('municipality.requests.index', ['status' => 'Missing Documents']) }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
             </div>
         </div>
     </div>

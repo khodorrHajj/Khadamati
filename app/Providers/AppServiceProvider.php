@@ -2,6 +2,18 @@
 
 namespace App\Providers;
 
+use App\Models\Appointment;
+use App\Models\Feedback;
+use App\Models\RequestMessage;
+use App\Models\ServiceRequest;
+use App\Policies\AppointmentPolicy;
+use App\Policies\FeedbackPolicy;
+use App\Policies\RequestMessagePolicy;
+use App\Policies\ServiceRequestPolicy;
+use App\Services\MunicipalityNavbarDataService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +31,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(ServiceRequest::class, ServiceRequestPolicy::class);
+        Gate::policy(Appointment::class, AppointmentPolicy::class);
+        Gate::policy(Feedback::class, FeedbackPolicy::class);
+        Gate::policy(RequestMessage::class, RequestMessagePolicy::class);
+
+        View::composer('includes.municipality-navbar', function ($view) {
+            $view->with(app(MunicipalityNavbarDataService::class)->forUser(Auth::user()));
+        });
     }
 }

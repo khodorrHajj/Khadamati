@@ -35,4 +35,8 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL'),
         'maps_key' => env('GOOGLE_MAPS_API_KEY'),
     ],
+    'sms' => [
+        'driver' => env('SMS_DRIVER', 'stub'),
+        'from' => env('SMS_FROM'),
+    ],
 ];

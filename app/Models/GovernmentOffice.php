@@ -57,4 +57,14 @@ class GovernmentOffice extends Model
     {
         return $this->hasMany(GovernmentOfficeWorkingHour::class, 'government_office_id', 'id');
     }
+
+    public function timeSlots()
+    {
+        return $this->hasMany(TimeSlot::class, 'government_office_id', 'id');
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'government_office_id', 'id');
+    }
 }

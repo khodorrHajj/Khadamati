@@ -31,13 +31,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link disabled" aria-disabled="true">
+                    <a href="{{ route('municipality.requests.index') }}" class="nav-link {{ request()->routeIs('municipality.requests.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-alt"></i>
                         <p>Requests</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link disabled" aria-disabled="true">
+                    <a href="{{ route('municipality.feedback.index') }}" class="nav-link {{ request()->routeIs('municipality.feedback.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-comment-dots"></i>
                         <p>Feedback</p>
                     </a>
@@ -49,13 +49,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link disabled" aria-disabled="true">
+                    <a href="{{ route('municipality.appointments.index') }}" class="nav-link {{ request()->routeIs('municipality.appointments.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-calendar-check"></i>
                         <p>Appointments</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link disabled" aria-disabled="true">
+                    <a href="{{ route('municipality.reports.index') }}" class="nav-link {{ request()->routeIs('municipality.reports.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-chart-bar"></i>
                         <p>Reports</p>
                     </a>
