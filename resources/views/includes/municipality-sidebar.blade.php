@@ -43,9 +43,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link disabled" aria-disabled="true">
+                    <a href="{{ route('municipality.messages.index') }}" class="nav-link {{ request()->routeIs('municipality.messages.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-envelope"></i>
-                        <p>Messages</p>
+                        <p>
+                            Messages
+                            <span id="municipality-sidebar-message-badge" class="right badge badge-info {{ $municipalityUnreadMessageCount ? '' : 'd-none' }}">{{ $municipalityUnreadMessageCount }}</span>
+                        </p>
                     </a>
                 </li>
                 <li class="nav-item">

@@ -19,6 +19,7 @@ class UpdateServiceRequestRequest extends FormRequest
             'status' => ['required', Rule::in(ServiceRequest::statuses())],
             'notes' => ['nullable', 'string'],
             'official_response' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:5120'],
+            'official_response_document_type' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

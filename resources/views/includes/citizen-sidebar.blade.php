@@ -19,7 +19,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('citizen.dashboard') }}#recent-requests" class="nav-link">
+                    <a href="{{ route('citizen.requests.index') }}" class="nav-link {{ request()->routeIs('citizen.requests.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-alt"></i>
                         <p>My Requests</p>
                     </a>
@@ -31,9 +31,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('citizen.dashboard') }}#messages" class="nav-link">
+                    <a href="{{ route('citizen.messages.index') }}" class="nav-link {{ request()->routeIs('citizen.messages.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-envelope"></i>
-                        <p>Messages</p>
+                        <p>
+                            Messages
+                            <span id="citizen-sidebar-message-badge" class="right badge badge-info {{ $citizenUnreadMessageCount ? '' : 'd-none' }}">{{ $citizenUnreadMessageCount }}</span>
+                        </p>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -46,6 +49,12 @@
                     <a href="{{ route('citizen.dashboard') }}#notifications" class="nav-link">
                         <i class="nav-icon fas fa-bell"></i>
                         <p>Notifications</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('citizen.feedback.index') }}" class="nav-link {{ request()->routeIs('citizen.feedback.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-comment-dots"></i>
+                        <p>Feedback</p>
                     </a>
                 </li>
                 <li class="nav-item">

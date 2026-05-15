@@ -36,8 +36,22 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Feedback::class, FeedbackPolicy::class);
         Gate::policy(RequestMessage::class, RequestMessagePolicy::class);
 
-        View::composer('includes.municipality-navbar', function ($view) {
+        View::composer(['includes.municipality-navbar', 'includes.municipality-sidebar'], function ($view) {
             $view->with(app(MunicipalityNavbarDataService::class)->forUser(Auth::user()));
+        });
+
+        View::composer(['includes.citizen-navbar', 'includes.citizen-sidebar'], function ($view) {
+            $user = Auth::user();
+
+            $view->with('citizenUnreadMessageCount', $user
+                ? RequestMessage::query()
+                    ->unread()
+                    ->where('sender_id', '!=', $user->id)
+                    ->whereHas('serviceRequest', function ($query) use ($user) {
+                        $query->where('user_id', $user->id);
+                    })
+                    ->count()
+                : 0);
         });
     }
 }

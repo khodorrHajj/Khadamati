@@ -12,7 +12,7 @@
 
     <ul class="navbar-nav ml-auto">
         <li class="nav-item">
-            <a class="nav-link" href="{{ route('municipality.requests.index') }}" title="Unread citizen messages">
+            <a class="nav-link" href="{{ route('municipality.messages.index') }}" title="Unread citizen messages">
                 <i class="far fa-comments"></i>
                 <span id="municipality-message-badge" class="badge badge-info navbar-badge {{ $municipalityUnreadMessageCount ? '' : 'd-none' }}">{{ $municipalityUnreadMessageCount }}</span>
             </a>
@@ -62,6 +62,7 @@
         const badge = document.getElementById('municipality-notification-badge');
         const countLabel = document.getElementById('municipality-notification-count-label');
         const messageBadge = document.getElementById('municipality-message-badge');
+        const sidebarMessageBadge = document.getElementById('municipality-sidebar-message-badge');
 
         if (!badge || !countLabel || !messageBadge) {
             return;
@@ -109,6 +110,11 @@
 
                 messageBadge.textContent = count;
                 messageBadge.classList.toggle('d-none', count === 0);
+
+                if (sidebarMessageBadge) {
+                    sidebarMessageBadge.textContent = count;
+                    sidebarMessageBadge.classList.toggle('d-none', count === 0);
+                }
             } catch (error) {
                 // Polling should fail quietly until a future real-time layer replaces it.
             }

@@ -11,7 +11,8 @@ class MunicipalityRequestUpdateService
     public function update(
         ServiceRequest $serviceRequest,
         array $validated,
-        ?UploadedFile $officialResponse = null
+        ?UploadedFile $officialResponse = null,
+        ?int $uploadedBy = null
     ): void {
         $updates = [
             'status' => $validated['status'],
@@ -25,6 +26,8 @@ class MunicipalityRequestUpdateService
 
             $updates['official_response_path'] = $officialResponse->store('official-responses', 'public');
             $updates['official_response_original_name'] = $officialResponse->getClientOriginalName();
+            $updates['official_response_uploaded_by'] = $uploadedBy;
+            $updates['official_response_document_type'] = $validated['official_response_document_type'] ?? 'Official Response';
         }
 
         $serviceRequest->update($updates);

@@ -10,11 +10,24 @@ use Illuminate\Support\Facades\Auth;
 
 class FeedbackController extends Controller
 {
+    public function index()
+    {
+        $feedback = Feedback::with([
+            'responder',
+            'serviceRequest.service.governmentOffice.municipality',
+        ])
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->paginate(10);
+
+        return view('Citizen.feedback.index', compact('feedback'));
+    }
+
     public function store(StoreFeedbackRequest $request, ServiceRequest $serviceRequest)
     {
         $this->authorizeOrAbort('createForCitizen', [Feedback::class, $serviceRequest]);
 
-        if ($serviceRequest->feedback()->exists()) {
+        if ($serviceRequest->feedback()->where('user_id', Auth::id())->exists()) {
             return redirect()
                 ->route('citizen.requests.show', $serviceRequest)
                 ->withErrors(['feedback' => 'Feedback has already been submitted for this request.']);

@@ -23,6 +23,8 @@ class ServiceRequest extends Model
         'message',
         'official_response_path',
         'official_response_original_name',
+        'official_response_uploaded_by',
+        'official_response_document_type',
     ];
 
     protected $appends = [
@@ -108,5 +110,10 @@ class ServiceRequest extends Model
     {
         return $this->hasMany(Appointment::class, 'service_request_id', 'id')
             ->latest();
+    }
+
+    public function officialResponseUploader()
+    {
+        return $this->belongsTo(User::class, 'official_response_uploaded_by', 'id');
     }
 }

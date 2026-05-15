@@ -21,7 +21,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Request #{{ $serviceRequest->id }}</h3>
-                    <a href="{{ route('tracking.show', $serviceRequest->tracking_code) }}" class="btn btn-secondary btn-sm">Public Tracking View</a>
+                    <a href="{{ route('citizen.requests.index') }}" class="btn btn-secondary btn-sm">Back to My Requests</a>
                 </div>
                 <div class="card-body">
                     <table class="table table-bordered">
@@ -32,11 +32,23 @@
                             </tr>
                             <tr>
                                 <th>Status</th>
-                                <td>{{ $serviceRequest->status }}</td>
+                                <td><span class="badge badge-light border">{{ $serviceRequest->status }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Public Tracking URL</th>
+                                <td>
+                                    <a href="{{ route('tracking.show', $serviceRequest->tracking_code) }}" target="_blank" rel="noopener">
+                                        {{ route('tracking.show', $serviceRequest->tracking_code) }}
+                                    </a>
+                                </td>
                             </tr>
                             <tr>
                                 <th>Office</th>
                                 <td>{{ $serviceRequest->service?->governmentOffice?->name ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Municipality</th>
+                                <td>{{ $serviceRequest->service?->governmentOffice?->municipality?->name ?? '-' }}</td>
                             </tr>
                             <tr>
                                 <th>Category</th>
@@ -47,7 +59,7 @@
                                 <td>{{ $serviceRequest->service?->name ?? '-' }}</td>
                             </tr>
                             <tr>
-                                <th>Notes</th>
+                                <th>Submitted Notes</th>
                                 <td>{!! nl2br(e($serviceRequest->notes ?: 'No notes provided.')) !!}</td>
                             </tr>
                             <tr>
@@ -61,21 +73,56 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Uploaded Documents</h3>
+                    <h3 class="card-title">Citizen Uploaded Documents</h3>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover text-nowrap mb-0">
+                        <thead>
+                            <tr>
+                                <th>Document</th>
+                                <th>Type</th>
+                                <th>Uploaded</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($serviceRequest->requestDocuments as $document)
+                                <tr>
+                                    <td>{{ $document->original_name ?: basename($document->document_path) }}</td>
+                                    <td>{{ $document->document_type ?: 'Submitted document' }}</td>
+                                    <td>{{ optional($document->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
+                                    <td>
+                                        <a href="{{ route('citizen.requests.documents.download', [$serviceRequest, $document]) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No documents uploaded yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Official Response Documents</h3>
                 </div>
                 <div class="card-body">
-                    @forelse ($serviceRequest->requestDocuments as $document)
-                        <div class="mb-2">
-                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($document->document_path) }}" target="_blank" rel="noopener">
-                                {{ $document->original_name ?: basename($document->document_path) }}
-                            </a>
-                            @if ($document->document_type)
-                                <span class="text-muted small">({{ $document->document_type }})</span>
-                            @endif
+                    @if ($serviceRequest->official_response_path)
+                        <a href="{{ route('citizen.requests.official-response.download', $serviceRequest) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-download"></i>
+                            {{ $serviceRequest->official_response_original_name ?: 'Download official response' }}
+                        </a>
+                        <div class="text-muted small mt-2">
+                            {{ $serviceRequest->official_response_document_type ?: 'Official Response' }}
                         </div>
-                    @empty
-                        <p class="text-muted mb-0">No documents uploaded yet.</p>
-                    @endforelse
+                    @else
+                        <p class="text-muted mb-0">No official response document has been uploaded yet.</p>
+                    @endif
                 </div>
             </div>
         </div>
@@ -248,14 +295,14 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card" id="messages" data-request-chat data-request-id="{{ $serviceRequest->id }}" data-current-user-id="{{ Auth::id() }}">
                 <div class="card-header">
                     <h3 class="card-title">Messages</h3>
                 </div>
                 <div class="card-body">
-                    <div class="mb-4">
+                    <div class="mb-4" data-chat-messages>
                         @forelse ($serviceRequest->requestMessages as $messageItem)
-                            <div class="border rounded p-3 mb-3 {{ $messageItem->sender_id === Auth::id() ? 'bg-light' : '' }}">
+                            <div class="border rounded p-3 mb-3 {{ $messageItem->sender_id === Auth::id() ? 'bg-light' : '' }}" data-message-id="{{ $messageItem->id }}">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div>
                                         <strong>{{ $messageItem->sender->name ?? 'Unknown User' }}</strong>
@@ -272,8 +319,8 @@
                                     <div class="mb-2">{!! nl2br(e($messageItem->body)) !!}</div>
                                 @endif
 
-                                @if ($messageItem->attachment_url)
-                                    <a href="{{ $messageItem->attachment_url }}" target="_blank" rel="noopener">
+                                @if ($messageItem->attachment_path)
+                                    <a href="{{ route('request-messages.attachments.download', $messageItem) }}" target="_blank" rel="noopener">
                                         Open attachment
                                     </a>
                                 @endif
@@ -283,7 +330,7 @@
                         @endforelse
                     </div>
 
-                    <form method="POST" action="{{ route('citizen.requests.messages.store', $serviceRequest) }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('citizen.requests.messages.store', $serviceRequest) }}" enctype="multipart/form-data" data-chat-form>
                         @csrf
 
                         <div class="form-group">
@@ -307,6 +354,7 @@
                     </form>
                 </div>
             </div>
+            @include('shared.request-chat-scripts')
         </div>
     </div>
 @endsection

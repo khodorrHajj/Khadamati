@@ -20,9 +20,15 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
         Route::post('/services/{service}/request', [ServiceCatalogController::class, 'storeRequest'])->name('services.request.store');
         Route::get('/services/{service}', [ServiceCatalogController::class, 'service'])->name('services.show');
         Route::post('/services/{service}/requests', [ServiceCatalogController::class, 'storeRequest'])->name('requests.store');
+        Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
+        Route::get('/requests', [ServiceCatalogController::class, 'requests'])->name('requests.index');
+        Route::get('/requests/{serviceRequest}/documents/{requestDocument}/download', [ServiceCatalogController::class, 'downloadDocument'])->name('requests.documents.download');
+        Route::get('/requests/{serviceRequest}/official-response/download', [ServiceCatalogController::class, 'downloadOfficialResponse'])->name('requests.official-response.download');
         Route::get('/requests/{serviceRequest}', [ServiceCatalogController::class, 'request'])->name('requests.show');
         Route::post('/requests/{serviceRequest}/documents', [ServiceCatalogController::class, 'storeDocument'])->name('requests.documents.store');
         Route::post('/requests/{serviceRequest}/feedback', [FeedbackController::class, 'store'])->name('requests.feedback.store');
+        Route::get('/messages', [RequestMessageController::class, 'index'])->name('messages.index');
         Route::post('/requests/{serviceRequest}/messages', [RequestMessageController::class, 'store'])->name('requests.messages.store');
+        Route::get('/messages/unread-count', [RequestMessageController::class, 'unreadCount'])->name('messages.unread-count');
         Route::post('/requests/{serviceRequest}/appointments', [AppointmentController::class, 'store'])->name('requests.appointments.store');
     });

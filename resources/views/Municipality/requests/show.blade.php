@@ -92,18 +92,6 @@
                                             @endif
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <th>Official Response</th>
-                                        <td>
-                                            @if ($serviceRequest->official_response_url)
-                                                <a href="{{ $serviceRequest->official_response_url }}" target="_blank" rel="noopener">
-                                                    {{ $serviceRequest->official_response_original_name ?: 'Download file' }}
-                                                </a>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -111,22 +99,73 @@
 
                     <div class="card mt-3">
                         <div class="card-header">
-                            <h3 class="card-title">Submitted Documents</h3>
+                            <h3 class="card-title">Citizen Uploaded Documents</h3>
                         </div>
-                        <div class="card-body">
-                            @forelse ($serviceRequest->requestDocuments as $document)
-                                <div class="mb-2">
-                                    @if ($document->document_path)
-                                        <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($document->document_path) }}" target="_blank" rel="noopener">
-                                            {{ $document->original_name ?: basename($document->document_path) }}
-                                        </a>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover text-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Type</th>
+                                        <th>Uploaded</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($serviceRequest->requestDocuments as $document)
+                                        <tr>
+                                            <td>{{ $document->original_name ?: basename($document->document_path) }}</td>
+                                            <td>{{ $document->document_type ?: 'Submitted document' }}</td>
+                                            <td>{{ optional($document->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
+                                            <td>
+                                                <a href="{{ route('municipality.requests.documents.download', [$serviceRequest, $document]) }}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-download"></i> Download
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">No submitted documents.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">Official Response Documents</h3>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover text-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Type</th>
+                                        <th>Uploaded By</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if ($serviceRequest->official_response_path)
+                                        <tr>
+                                            <td>{{ $serviceRequest->official_response_original_name ?: basename($serviceRequest->official_response_path) }}</td>
+                                            <td>{{ $serviceRequest->official_response_document_type ?: 'Official Response' }}</td>
+                                            <td>{{ $serviceRequest->officialResponseUploader?->name ?? 'Municipality user' }}</td>
+                                            <td>
+                                                <a href="{{ route('municipality.requests.official-response.download', $serviceRequest) }}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-download"></i> Download
+                                                </a>
+                                            </td>
+                                        </tr>
                                     @else
-                                        {{ $document->original_name ?: 'Document' }}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">No official response document uploaded yet.</td>
+                                        </tr>
                                     @endif
-                                </div>
-                            @empty
-                                <p class="text-muted mb-0">No submitted documents.</p>
-                            @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -179,6 +218,14 @@
                             <input type="file" name="official_response" class="form-control-file @error('official_response') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*">
                             <small class="form-text text-muted">PDF and image files only. Stored in public storage.</small>
                             @error('official_response')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            <label>Official Response Type</label>
+                            <input type="text" name="official_response_document_type" value="{{ old('official_response_document_type', $serviceRequest->official_response_document_type ?: 'Official Response') }}" class="form-control @error('official_response_document_type') is-invalid @enderror">
+                            @error('official_response_document_type')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
                         </div>
@@ -264,14 +311,14 @@
         </div>
     </div>
 
-    <div class="card mt-3">
+    <div class="card mt-3" id="messages" data-request-chat data-request-id="{{ $serviceRequest->id }}" data-current-user-id="{{ Auth::id() }}">
         <div class="card-header">
             <h3 class="card-title">Messages</h3>
         </div>
         <div class="card-body">
-            <div class="mb-4">
+            <div class="mb-4" data-chat-messages>
                 @forelse ($serviceRequest->requestMessages as $messageItem)
-                    <div class="border rounded p-3 mb-3 {{ $messageItem->sender_id === Auth::id() ? 'bg-light' : '' }}">
+                    <div class="border rounded p-3 mb-3 {{ $messageItem->sender_id === Auth::id() ? 'bg-light' : '' }}" data-message-id="{{ $messageItem->id }}">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
                                 <strong>{{ $messageItem->sender->name ?? 'Unknown User' }}</strong>
@@ -291,8 +338,8 @@
                             <div class="mb-2">{!! nl2br(e($messageItem->body)) !!}</div>
                         @endif
 
-                        @if ($messageItem->attachment_url)
-                            <a href="{{ $messageItem->attachment_url }}" target="_blank" rel="noopener">
+                        @if ($messageItem->attachment_path)
+                            <a href="{{ route('request-messages.attachments.download', $messageItem) }}" target="_blank" rel="noopener">
                                 Open attachment
                             </a>
                         @endif
@@ -302,7 +349,7 @@
                 @endforelse
             </div>
 
-            <form method="POST" action="{{ route('municipality.requests.messages.store', $serviceRequest) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('municipality.requests.messages.store', $serviceRequest) }}" enctype="multipart/form-data" data-chat-form>
                 @csrf
 
                 <div class="form-group">
@@ -326,4 +373,5 @@
             </form>
         </div>
     </div>
+    @include('shared.request-chat-scripts')
 @endsection

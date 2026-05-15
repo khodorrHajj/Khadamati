@@ -14,7 +14,7 @@
                 <div class="icon">
                     <i class="fas fa-file-alt"></i>
                 </div>
-                <a href="#recent-requests" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
+                <a href="{{ route('citizen.requests.index') }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <div class="col-lg-2 col-md-4 col-sm-6">
@@ -26,7 +26,7 @@
                 <div class="icon">
                     <i class="fas fa-hourglass-half"></i>
                 </div>
-                <a href="#recent-requests" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
+                <a href="{{ route('citizen.requests.index', ['status' => \App\Models\ServiceRequest::STATUS_PENDING]) }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <div class="col-lg-2 col-md-4 col-sm-6">
@@ -38,7 +38,7 @@
                 <div class="icon">
                     <i class="fas fa-check-circle"></i>
                 </div>
-                <a href="#recent-requests" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
+                <a href="{{ route('citizen.requests.index', ['status' => \App\Models\ServiceRequest::STATUS_COMPLETED]) }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <div class="col-lg-2 col-md-4 col-sm-6" id="appointments">
@@ -143,7 +143,7 @@
                         <a href="{{ route('citizen.services.index') }}" class="list-group-item list-group-item-action">
                             <i class="fas fa-concierge-bell mr-2 text-primary"></i> Browse Services
                         </a>
-                        <a href="#recent-requests" class="list-group-item list-group-item-action">
+                        <a href="{{ route('citizen.requests.index') }}" class="list-group-item list-group-item-action">
                             <i class="fas fa-file-alt mr-2 text-info"></i> Review My Requests
                         </a>
                         <a href="#appointments" class="list-group-item list-group-item-action">

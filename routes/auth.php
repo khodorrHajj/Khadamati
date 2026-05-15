@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\RequestMessageAttachmentController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,5 +27,7 @@ Route::middleware('check2fa')->group(function () {
 
 Route::middleware('checkIfConnected')->group(function () {
     Route::get('/home', [LoginController::class, 'home'])->name('home');
+    Route::get('/request-messages/{requestMessage}/attachment/download', [RequestMessageAttachmentController::class, 'download'])
+        ->name('request-messages.attachments.download');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 });
