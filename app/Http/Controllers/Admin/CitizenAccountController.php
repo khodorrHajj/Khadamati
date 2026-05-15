@@ -40,7 +40,34 @@ class CitizenAccountController extends Controller
     {
         $this->ensureCitizenAccount($citizen);
 
-        return view('Admin.citizens.show', compact('citizen'));
+        $citizen->load(['serviceRequests.service.governmentOffice.municipality', 'feedback']);
+
+        $requestStats = [
+            'total' => $citizen->serviceRequests()->count(),
+            'pending' => $citizen->serviceRequests()->where('status', 'Pending')->count(),
+            'in_review' => $citizen->serviceRequests()->where('status', 'In Review')->count(),
+            'approved' => $citizen->serviceRequests()->where('status', 'Approved')->count(),
+            'rejected' => $citizen->serviceRequests()->where('status', 'Rejected')->count(),
+            'completed' => $citizen->serviceRequests()->where('status', 'Completed')->count(),
+        ];
+
+        $recentRequests = $citizen->serviceRequests()
+            ->with('service.governmentOffice.municipality')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        return view('Admin.citizens.show', compact('citizen', 'requestStats', 'recentRequests'));
+    }
+
+    public function destroy(User $citizen): RedirectResponse
+    {
+        $this->ensureCitizenAccount($citizen);
+
+        $citizen->delete();
+
+        return redirect()->route('admin.citizens.index')
+            ->with('success', 'Citizen account deleted successfully.');
     }
 
     public function activate(User $citizen): RedirectResponse

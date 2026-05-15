@@ -25,6 +25,30 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('admin.services.index') }}" class="nav-link {{ request()->is('admin/services*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-concierge-bell"></i>
+                        <p>Services Overview</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.categories.index') }}" class="nav-link {{ request()->is('admin/categories*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tags"></i>
+                        <p>Service Categories</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.feedback.index') }}" class="nav-link {{ request()->is('admin/feedback*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-comments"></i>
+                        <p>Feedback Management</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.appointments.index') }}" class="nav-link {{ request()->is('admin/appointments*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-calendar-alt"></i>
+                        <p>Appointments Overview</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('admin.municipality.users') }}" class="nav-link {{ request()->is('admin/municipality-users') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-users"></i>
                         <p>Manage Municipality Users</p>
