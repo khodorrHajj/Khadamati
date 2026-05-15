@@ -57,15 +57,15 @@
 
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label>Price</label>
-                        <input type="number" step="0.01" min="0" name="price" value="{{ old('price', $service->price) }}" class="form-control @error('price') is-invalid @enderror">
+                        <label>Price (LBP)</label>
+                        <input type="number" step="1000" min="0" name="price" value="{{ old('price', $service->price) }}" class="form-control @error('price') is-invalid @enderror">
                         @error('price')
                             <span class="invalid-feedback d-block">{{ $message }}</span>
                         @enderror
                     </div>
 
                     <div class="form-group col-md-6">
-                        <label>Duration in Days</label>
+                        <label>Expected Duration From (Days)</label>
                         <input type="number" min="1" name="duration_days" value="{{ old('duration_days', $service->duration_days) }}" class="form-control @error('duration_days') is-invalid @enderror">
                         @error('duration_days')
                             <span class="invalid-feedback d-block">{{ $message }}</span>
@@ -74,10 +74,31 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Required Documents</label>
-                    <textarea name="required_documents" class="form-control @error('required_documents') is-invalid @enderror" rows="5" placeholder="One document per line">{{ old('required_documents', $service->required_documents) }}</textarea>
-                    <small class="form-text text-muted">Plain text is preserved for backward compatibility. Use one document per line.</small>
+                    <label>Expected Duration To (Days)</label>
+                    <input type="number" min="{{ old('duration_days', $service->durationFromDays()) }}" name="duration_days_max" value="{{ old('duration_days_max', $service->durationToDays()) }}" class="form-control @error('duration_days_max') is-invalid @enderror">
+                    @error('duration_days_max')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    @include('shared.document-picker', [
+                        'pickerId' => 'service-required-documents-edit',
+                        'inputName' => 'required_documents_list',
+                        'label' => 'Required Documents',
+                        'placeholder' => 'Search or type a required document',
+                        'presetDocuments' => $requiredDocumentPresets,
+                        'selectedDocuments' => old('required_documents_list', $service->requiredDocumentList()),
+                        'legacyInputName' => 'required_documents',
+                        'helpText' => 'Search from the preloaded document catalog, add the needed documents, and remove outdated ones.',
+                    ])
                     @error('required_documents')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                    @error('required_documents_list')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                    @error('required_documents_list.*')
                         <span class="invalid-feedback d-block">{{ $message }}</span>
                     @enderror
                 </div>

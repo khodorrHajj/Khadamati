@@ -16,14 +16,36 @@
         </div>
     @endif
 
+    @if ($serviceRequest->needsCitizenDocuments())
+        <div class="alert alert-warning">
+            <h5 class="mb-2"><i class="fas fa-file-upload mr-1"></i> Waiting For Citizen Documents</h5>
+            <p class="mb-0">
+                This request is paused until the citizen uploads the requested files. Your latest note is shown to the citizen as the missing-documents explanation.
+            </p>
+        </div>
+    @elseif ($serviceRequest->isOverdue())
+        <div class="alert alert-danger">
+            <h5 class="mb-2"><i class="fas fa-exclamation-circle mr-1"></i> Request Overdue</h5>
+            <p class="mb-0">
+                Expected by {{ optional($serviceRequest->dueAt())->format('Y-m-d H:i') ?: '-' }}.
+                This request is overdue by {{ $serviceRequest->overdueDays() }} day{{ $serviceRequest->overdueDays() === 1 ? '' : 's' }}.
+            </p>
+        </div>
+    @endif
+
     <div class="row">
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Request #{{ $serviceRequest->id }}</h3>
-                    <a href="{{ route('municipality.requests.index') }}" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-arrow-left"></i> Back to Requests
-                    </a>
+                    <div class="d-flex align-items-center">
+                        <a href="{{ route('municipality.requests.receipt.download', $serviceRequest) }}" class="btn btn-outline-primary btn-sm mr-2">
+                            <i class="fas fa-file-pdf"></i> Receipt PDF
+                        </a>
+                        <a href="{{ route('municipality.requests.index') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Requests
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -44,7 +66,19 @@
                                     </tr>
                                     <tr>
                                         <th>Status</th>
-                                        <td><span class="badge badge-light border">{{ $serviceRequest->status }}</span></td>
+                                        <td>
+                                            <span class="badge badge-light border">{{ $serviceRequest->status }}</span>
+                                            @if ($serviceRequest->isOverdue())
+                                                <span class="badge badge-danger ml-1">Overdue</span>
+                                            @endif
+                                            @if ($serviceRequest->isClosed())
+                                                <span class="badge badge-success ml-1">Closed</span>
+                                            @elseif ($serviceRequest->isAwaitingAdmin())
+                                                <span class="badge badge-danger ml-1">Awaiting Admin</span>
+                                            @else
+                                                <span class="badge badge-info ml-1">Awaiting Municipality</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th>Submitted At</th>
@@ -76,7 +110,7 @@
                                         <th>Price</th>
                                         <td>
                                             @if ($serviceRequest->service)
-                                                ${{ number_format((float) $serviceRequest->service->price, 2) }}
+                                                {{ $serviceRequest->service->formattedPrice() }}
                                             @else
                                                 -
                                             @endif
@@ -86,11 +120,19 @@
                                         <th>Duration</th>
                                         <td>
                                             @if ($serviceRequest->service)
-                                                {{ $serviceRequest->service->duration_days }} day{{ $serviceRequest->service->duration_days === 1 ? '' : 's' }}
+                                                {{ $serviceRequest->service->durationLabel() }}
                                             @else
                                                 -
                                             @endif
                                         </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Assigned Municipality User</th>
+                                        <td>{{ $serviceRequest->assignedTo?->name ?? 'Unassigned' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Escalation Reason</th>
+                                        <td>{!! nl2br(e($serviceRequest->escalation_reason ?: 'No active escalation.')) !!}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -177,6 +219,11 @@
                             {!! nl2br(e($serviceRequest->notes ?: 'No notes added yet.')) !!}
                         </div>
                     </div>
+
+                    @include('shared.request-timeline', [
+                        'entries' => $serviceRequest->timelineForDisplay(),
+                        'title' => 'Request History',
+                    ])
                 </div>
             </div>
         </div>
@@ -208,7 +255,44 @@
                         <div class="form-group">
                             <label>Notes</label>
                             <textarea name="notes" rows="6" class="form-control @error('notes') is-invalid @enderror">{{ old('notes', $serviceRequest->notes) }}</textarea>
+                            <small class="form-text text-muted">
+                                If you set the status to <strong>Missing Documents</strong>, this note becomes the citizen-facing instruction about what they need to upload.
+                            </small>
                             @error('notes')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            @include('shared.document-picker', [
+                                'pickerId' => 'missing-documents-picker',
+                                'inputName' => 'missing_document_items',
+                                'label' => 'Requested Missing Documents',
+                                'placeholder' => 'Search and add the missing document',
+                                'presetDocuments' => $requiredDocumentChoices,
+                                'selectedDocuments' => old('missing_document_items', $serviceRequest->missingDocumentList()),
+                                'helpText' => 'Select the exact documents the citizen still needs to upload when the request is marked Missing Documents.',
+                            ])
+                            @error('missing_document_items')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                            @error('missing_document_items.*')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" name="escalate_to_admin" value="1" class="custom-control-input" id="escalate_to_admin" {{ old('escalate_to_admin') ? 'checked' : '' }}>
+                                <label class="custom-control-label" for="escalate_to_admin">Escalate this request to admin review</label>
+                            </div>
+                            <small class="form-text text-muted">Use this when the municipality needs admin intervention or a higher-level decision.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Escalation Reason</label>
+                            <textarea name="escalation_reason" rows="4" class="form-control @error('escalation_reason') is-invalid @enderror" placeholder="Explain why admin review is needed.">{{ old('escalation_reason', $serviceRequest->isAwaitingAdmin() ? $serviceRequest->escalation_reason : '') }}</textarea>
+                            @error('escalation_reason')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
                         </div>
@@ -218,6 +302,22 @@
                             <input type="file" name="official_response" class="form-control-file @error('official_response') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*">
                             <small class="form-text text-muted">PDF and image files only. Stored in public storage.</small>
                             @error('official_response')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" name="generate_official_response_pdf" value="1" class="custom-control-input" id="generate_official_response_pdf" {{ old('generate_official_response_pdf') ? 'checked' : '' }}>
+                                <label class="custom-control-label" for="generate_official_response_pdf">Generate official response PDF</label>
+                            </div>
+                            <small class="form-text text-muted">Use this when you want the platform to create a PDF instead of uploading one manually.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Official Response Summary</label>
+                            <textarea name="official_response_summary" rows="4" class="form-control @error('official_response_summary') is-invalid @enderror" placeholder="Optional summary that will be placed inside the generated PDF. If left empty, the platform will create a standard confirmation message.">{{ old('official_response_summary') }}</textarea>
+                            @error('official_response_summary')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
                         </div>
@@ -234,6 +334,18 @@
                             <i class="fas fa-save"></i> Update Request
                         </button>
                     </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Conversation</h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Open the dedicated chat screen to follow the citizen conversation in a cleaner layout.</p>
+                    <a href="{{ route('municipality.messages.show', $serviceRequest) }}" class="btn btn-primary btn-block">
+                        Open Chat
+                    </a>
                 </div>
             </div>
 
@@ -311,67 +423,4 @@
         </div>
     </div>
 
-    <div class="card mt-3" id="messages" data-request-chat data-request-id="{{ $serviceRequest->id }}" data-current-user-id="{{ Auth::id() }}">
-        <div class="card-header">
-            <h3 class="card-title">Messages</h3>
-        </div>
-        <div class="card-body">
-            <div class="mb-4" data-chat-messages>
-                @forelse ($serviceRequest->requestMessages as $messageItem)
-                    <div class="border rounded p-3 mb-3 {{ $messageItem->sender_id === Auth::id() ? 'bg-light' : '' }}" data-message-id="{{ $messageItem->id }}">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <strong>{{ $messageItem->sender->name ?? 'Unknown User' }}</strong>
-                                <span class="text-muted small ml-2">
-                                    {{ optional($messageItem->created_at)->format('Y-m-d H:i') ?: '-' }}
-                                </span>
-                                @if ($messageItem->sender && $messageItem->sender->role)
-                                    <span class="badge badge-light border ml-2">{{ ucfirst($messageItem->sender->role->role) }}</span>
-                                @endif
-                            </div>
-                            @if ($messageItem->sender_id !== Auth::id() && !$messageItem->read_at)
-                                <span class="badge badge-info">Unread</span>
-                            @endif
-                        </div>
-
-                        @if (filled($messageItem->body))
-                            <div class="mb-2">{!! nl2br(e($messageItem->body)) !!}</div>
-                        @endif
-
-                        @if ($messageItem->attachment_path)
-                            <a href="{{ route('request-messages.attachments.download', $messageItem) }}" target="_blank" rel="noopener">
-                                Open attachment
-                            </a>
-                        @endif
-                    </div>
-                @empty
-                    <p class="text-muted mb-0">No messages yet.</p>
-                @endforelse
-            </div>
-
-            <form method="POST" action="{{ route('municipality.requests.messages.store', $serviceRequest) }}" enctype="multipart/form-data" data-chat-form>
-                @csrf
-
-                <div class="form-group">
-                    <label>Message</label>
-                    <textarea name="body" rows="4" class="form-control @error('body') is-invalid @enderror" placeholder="Write your message to the citizen.">{{ old('body') }}</textarea>
-                    @error('body')
-                        <span class="invalid-feedback d-block">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label>Attachment</label>
-                    <input type="file" name="attachment" class="form-control-file @error('attachment') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*">
-                    <small class="form-text text-muted">Optional. PDF and image files up to 5 MB.</small>
-                    @error('attachment')
-                        <span class="invalid-feedback d-block">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                <button type="submit" class="btn btn-primary">Send Message</button>
-            </form>
-        </div>
-    </div>
-    @include('shared.request-chat-scripts')
 @endsection

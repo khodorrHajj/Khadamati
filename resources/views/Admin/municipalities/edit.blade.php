@@ -47,10 +47,10 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label>Email</label>
+                            <label>Email <span class="text-danger">*</span></label>
                             <input type="email" name="email"
                                    value="{{ old('email', $municipality->email) }}"
-                                   class="form-control @error('email') is-invalid @enderror">
+                                   class="form-control @error('email') is-invalid @enderror" required>
                             @error('email')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -64,10 +64,10 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>City</label>
+                            <label>City <span class="text-danger">*</span></label>
                             <input type="text" name="city"
                                    value="{{ old('city', $municipality->city) }}"
-                                   class="form-control @error('city') is-invalid @enderror">
+                                   class="form-control @error('city') is-invalid @enderror" required>
                             @error('city')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -75,10 +75,10 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Street</label>
+                            <label>Street <span class="text-danger">*</span></label>
                             <input type="text" name="street"
                                    value="{{ old('street', $municipality->street) }}"
-                                   class="form-control @error('street') is-invalid @enderror">
+                                   class="form-control @error('street') is-invalid @enderror" required>
                             @error('street')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -86,10 +86,10 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Building</label>
+                            <label>Building <span class="text-danger">*</span></label>
                             <input type="text" name="building"
                                    value="{{ old('building', $municipality->building) }}"
-                                   class="form-control @error('building') is-invalid @enderror">
+                                   class="form-control @error('building') is-invalid @enderror" required>
                             @error('building')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror

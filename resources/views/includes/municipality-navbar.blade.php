@@ -12,7 +12,7 @@
 
     <ul class="navbar-nav ml-auto">
         <li class="nav-item">
-            <a class="nav-link" href="{{ route('municipality.messages.index') }}" title="Unread citizen messages">
+            <a class="nav-link" href="{{ route('municipality.messages.open') }}" title="Unread citizen messages">
                 <i class="far fa-comments"></i>
                 <span id="municipality-message-badge" class="badge badge-info navbar-badge {{ $municipalityUnreadMessageCount ? '' : 'd-none' }}">{{ $municipalityUnreadMessageCount }}</span>
             </a>
@@ -20,25 +20,30 @@
         <li class="nav-item dropdown">
             <a class="nav-link" data-toggle="dropdown" href="#">
                 <i class="far fa-bell"></i>
-                <span id="municipality-notification-badge" class="badge badge-warning navbar-badge {{ $municipalityUnreadCount ? '' : 'd-none' }}">{{ $municipalityUnreadCount }}</span>
+                <span id="municipality-notification-badge" data-notification-count-badge class="badge badge-warning navbar-badge {{ $municipalityUnreadCount ? '' : 'd-none' }}">{{ $municipalityUnreadCount }}</span>
             </a>
             <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                 <span class="dropdown-item dropdown-header">
-                    <span id="municipality-notification-count-label">{{ $municipalityUnreadCount }}</span> unread notification{{ $municipalityUnreadCount === 1 ? '' : 's' }}
+                    <span id="municipality-notification-count-label" data-notification-count-label>{{ $municipalityUnreadCount }}</span> unread notification{{ $municipalityUnreadCount === 1 ? '' : 's' }}
                 </span>
                 <div class="dropdown-divider"></div>
 
                 @forelse ($municipalityUnreadNotifications as $notification)
-                    <div class="dropdown-item">
+                    <div class="dropdown-item" data-notification-item>
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="pr-2">
                                 <strong>{{ $notification->data['title'] ?? 'Notification' }}</strong>
                                 <div class="text-muted small">{{ $notification->data['message'] ?? '' }}</div>
                                 @if (!empty($notification->data['request_id']))
-                                    <a href="{{ route('municipality.requests.show', $notification->data['request_id']) }}" class="small">Open request</a>
+                                    <form method="POST" action="{{ route('municipality.notifications.read', $notification) }}" data-notification-form data-notification-action data-redirect-url="{{ route('municipality.requests.show', $notification->data['request_id']) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="redirect_to" value="{{ route('municipality.requests.show', $notification->data['request_id']) }}">
+                                        <button type="submit" class="btn btn-link btn-sm p-0">Open request</button>
+                                    </form>
                                 @endif
                             </div>
-                            <form method="POST" action="{{ route('municipality.notifications.read', $notification) }}">
+                            <form method="POST" action="{{ route('municipality.notifications.read', $notification) }}" data-notification-form data-notification-action>
                                 @csrf
                                 @method('PATCH')
                                 <button type="submit" class="btn btn-link btn-sm p-0">Mark read</button>
@@ -49,6 +54,9 @@
                 @empty
                     <span class="dropdown-item text-muted">No unread notifications.</span>
                 @endforelse
+
+                <div class="dropdown-divider"></div>
+                <a href="{{ route('municipality.notifications.index') }}" class="dropdown-item dropdown-footer">View all notifications</a>
             </div>
         </li>
         <li class="nav-item">
@@ -124,3 +132,5 @@
         setInterval(refreshUnreadMessages, 15000);
     }());
 </script>
+
+@include('shared.notification-actions-scripts')

@@ -8,26 +8,42 @@ use Illuminate\Support\Facades\Storage;
 
 class MunicipalityRequestUpdateService
 {
+    public function __construct(private readonly RequestPdfService $requestPdfService)
+    {
+    }
+
     public function update(
         ServiceRequest $serviceRequest,
         array $validated,
         ?UploadedFile $officialResponse = null,
-        ?int $uploadedBy = null
+        ?int $uploadedBy = null,
+        bool $generateOfficialResponsePdf = false,
+        ?string $issuerLabel = null
     ): void {
         $updates = [
             'status' => $validated['status'],
             'message' => $validated['notes'] ?? null,
         ];
 
-        if ($officialResponse) {
+        if ($officialResponse || $generateOfficialResponsePdf) {
             if ($serviceRequest->official_response_path) {
                 Storage::disk('public')->delete($serviceRequest->official_response_path);
             }
 
-            $updates['official_response_path'] = $officialResponse->store('official-responses', 'public');
-            $updates['official_response_original_name'] = $officialResponse->getClientOriginalName();
-            $updates['official_response_uploaded_by'] = $uploadedBy;
-            $updates['official_response_document_type'] = $validated['official_response_document_type'] ?? 'Official Response';
+            if ($officialResponse) {
+                $updates['official_response_path'] = $officialResponse->store('official-responses', 'public');
+                $updates['official_response_original_name'] = $officialResponse->getClientOriginalName();
+                $updates['official_response_uploaded_by'] = $uploadedBy;
+                $updates['official_response_document_type'] = $validated['official_response_document_type'] ?? 'Official Response';
+            } else {
+                $updates = array_merge($updates, $this->requestPdfService->generateAndStoreOfficialResponse(
+                    $serviceRequest,
+                    $validated['official_response_summary'] ?? ($validated['notes'] ?? null),
+                    $issuerLabel ?? 'Municipality',
+                    $validated['official_response_document_type'] ?? 'Official Response PDF',
+                    $uploadedBy
+                ));
+            }
         }
 
         $serviceRequest->update($updates);

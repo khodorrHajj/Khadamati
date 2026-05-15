@@ -42,7 +42,7 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ route('citizen.requests.show', $serviceRequest) }}#messages" class="btn btn-primary btn-sm">
+                                <a href="{{ route('citizen.messages.show', $serviceRequest) }}" class="btn btn-primary btn-sm">
                                     Open Chat
                                 </a>
                             </td>

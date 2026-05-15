@@ -97,7 +97,14 @@
                             <td>{{ $serviceRequest->tracking_code }}</td>
                             <td>{{ $serviceRequest->service?->name ?? '-' }}</td>
                             <td>{{ $serviceRequest->service?->governmentOffice?->name ?? '-' }}</td>
-                            <td><span class="badge badge-light border">{{ $serviceRequest->status }}</span></td>
+                            <td>
+                                <span class="badge badge-light border">{{ $serviceRequest->status }}</span>
+                                @if ($serviceRequest->needsCitizenDocuments())
+                                    <span class="badge badge-warning ml-1">Action Needed</span>
+                                @elseif ($serviceRequest->isOverdue())
+                                    <span class="badge badge-danger ml-1">Overdue</span>
+                                @endif
+                            </td>
                             <td>{{ optional($serviceRequest->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
                             <td>
                                 <a href="{{ route('citizen.requests.show', $serviceRequest) }}" class="btn btn-primary btn-sm">

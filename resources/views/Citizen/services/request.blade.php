@@ -35,16 +35,16 @@
                             </tr>
                             <tr>
                                 <th>Price</th>
-                                <td>${{ number_format((float) $service->price, 2) }}</td>
+                                <td>{{ $service->formattedPrice() }}</td>
                             </tr>
                             <tr>
                                 <th>Duration</th>
-                                <td>{{ $service->duration_days }} day{{ (int) $service->duration_days === 1 ? '' : 's' }}</td>
+                                <td>{{ $service->durationLabel() }}</td>
                             </tr>
                             <tr>
                                 <th>Required Documents</th>
                                 <td>
-                                    @php($documents = preg_split('/\r\n|\r|\n/', (string) $service->required_documents, -1, PREG_SPLIT_NO_EMPTY))
+                                    @php($documents = $service->requiredDocumentList())
                                     @if (count($documents))
                                         <ul class="pl-3 mb-0">
                                             @foreach ($documents as $document)

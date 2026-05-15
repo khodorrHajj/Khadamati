@@ -63,16 +63,17 @@
 
                         <div class="form-row">
                             <div class="form-group col-md-6">
-                                <label>Price</label>
-                                <input type="number" step="0.01" min="0" name="price" value="{{ old('price') }}" class="form-control @error('price') is-invalid @enderror">
+                                <label>Price (LBP)</label>
+                                <input type="number" step="1000" min="0" name="price" value="{{ old('price') }}" class="form-control @error('price') is-invalid @enderror" placeholder="250000">
+                                <small class="form-text text-muted">Enter the service fee in Lebanese pounds.</small>
                                 @error('price')
                                     <span class="invalid-feedback d-block">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="form-group col-md-6">
-                                <label>Duration in Days</label>
-                                <input type="number" min="1" name="duration_days" value="{{ old('duration_days') }}" class="form-control @error('duration_days') is-invalid @enderror">
+                                <label>Expected Duration From (Days)</label>
+                                <input type="number" min="1" name="duration_days" value="{{ old('duration_days') }}" class="form-control @error('duration_days') is-invalid @enderror" placeholder="3">
                                 @error('duration_days')
                                     <span class="invalid-feedback d-block">{{ $message }}</span>
                                 @enderror
@@ -80,10 +81,32 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Required Documents</label>
-                            <textarea name="required_documents" class="form-control @error('required_documents') is-invalid @enderror" rows="4" placeholder="One document per line">{{ old('required_documents') }}</textarea>
-                            <small class="form-text text-muted">Keep using plain text. Enter one document per line.</small>
+                            <label>Expected Duration To (Days)</label>
+                            <input type="number" min="{{ old('duration_days', 1) }}" name="duration_days_max" value="{{ old('duration_days_max', old('duration_days')) }}" class="form-control @error('duration_days_max') is-invalid @enderror" placeholder="7">
+                            <small class="form-text text-muted">Citizens will see this as an expected range, not a guaranteed exact date.</small>
+                            @error('duration_days_max')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            @include('shared.document-picker', [
+                                'pickerId' => 'service-required-documents-create',
+                                'inputName' => 'required_documents_list',
+                                'label' => 'Required Documents',
+                                'placeholder' => 'Search or type a required document',
+                                'presetDocuments' => $requiredDocumentPresets,
+                                'selectedDocuments' => old('required_documents_list', []),
+                                'legacyInputName' => 'required_documents',
+                                'helpText' => 'Search from the preloaded document catalog, add the ones you need, and remove them anytime.',
+                            ])
                             @error('required_documents')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                            @error('required_documents_list')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                            @error('required_documents_list.*')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
                         </div>
@@ -170,15 +193,15 @@
                                         @endif
                                     </td>
                                     <td>{{ $service->serviceCategory ? $service->serviceCategory->name : '-' }}</td>
-                                    <td>${{ number_format((float) $service->price, 2) }}</td>
-                                    <td>{{ $service->duration_days }} day{{ $service->duration_days === 1 ? '' : 's' }}</td>
+                                    <td>{{ $service->formattedPrice() }}</td>
+                                    <td>{{ $service->durationLabel() }}</td>
                                     <td>
                                         <span class="badge {{ $service->is_active ? 'badge-success' : 'badge-secondary' }}">
                                             {{ $service->is_active ? 'Active' : 'Inactive' }}
                                         </span>
                                     </td>
                                     <td>
-                                        @php($documents = preg_split('/\r\n|\r|\n/', (string) $service->required_documents, -1, PREG_SPLIT_NO_EMPTY))
+                                        @php($documents = $service->requiredDocumentList())
                                         @if (count($documents))
                                             @foreach ($documents as $document)
                                                 <div>{{ $document }}</div>

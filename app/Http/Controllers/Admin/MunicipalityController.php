@@ -30,7 +30,10 @@ class MunicipalityController extends Controller
 
         $municipalities = $query->latest()->paginate(10)->withQueryString();
 
-        return view('admin.municipalities.index', compact('municipalities'));
+        $days = $this->days;
+        $mapsKey = config('services.google.maps_key');
+
+        return view('admin.municipalities.index', compact('municipalities', 'days', 'mapsKey'));
     }
 
     public function create()
@@ -39,15 +42,80 @@ class MunicipalityController extends Controller
         return view('admin.municipalities.create', compact('days'));
     }
 
+    public function validateStep(Request $request)
+    {
+        $step = $request->input('step', 1);
+
+        if ($step == 1) {
+            $request->validate([
+                'name'            => 'required|string|max:255',
+                'phone'           => ['required', 'string', 'max:50', 'regex:/^(?:0(?:1|3|5)\\d{6}|(?:70|71|76|78|79|81)\\d{6}|\\+961(?:1|3|5|70|71|76|78|79|81)\\d{6})$/', 'unique:municipalities,phone'],
+                'email'           => 'required|email|max:255|unique:municipalities,email',
+                'city'            => 'required|string|max:255',
+                'street'          => 'required|string|max:255',
+                'building'        => 'required|string|max:255',
+                'status'          => 'required|in:active,inactive',
+                'notes'           => 'nullable|string',
+            ], [
+                'phone.regex' => 'Please enter a valid Lebanese phone number.',
+                'phone.unique' => 'This phone number is already used by another municipality.',
+                'email.unique' => 'This email is already used by another municipality.',
+            ]);
+        } elseif ($step == 2) {
+            $request->validate([
+                'google_maps_url' => 'nullable|url|max:1000',
+                'latitude'        => 'nullable|numeric|between:-90,90',
+                'longitude'       => 'nullable|numeric|between:-180,180',
+                'place_id'        => 'nullable|string|max:255',
+                'formatted_address' => 'nullable|string|max:1000',
+            ]);
+        } elseif ($step == 3) {
+            $hoursInput = $request->input('working_hours', []);
+            foreach ($this->days as $day) {
+                $dayData = $hoursInput[$day] ?? [];
+                $request->validate([
+                    "working_hours.{$day}.is_open" => 'required|boolean',
+                    "working_hours.{$day}.start_time" => 'nullable|date_format:H:i',
+                    "working_hours.{$day}.end_time" => 'nullable|date_format:H:i',
+                ]);
+
+                $isOpen = isset($dayData['is_open']) && $dayData['is_open'];
+                if ($isOpen) {
+                    $request->validate([
+                        "working_hours.{$day}.start_time" => 'required|date_format:H:i',
+                        "working_hours.{$day}.end_time" => 'required|date_format:H:i',
+                    ], [
+                        "working_hours.{$day}.start_time.required" => "{$day}: start time is required when day is open.",
+                        "working_hours.{$day}.end_time.required" => "{$day}: end time is required when day is open.",
+                    ]);
+
+                    if (
+                        !empty($dayData['start_time']) &&
+                        !empty($dayData['end_time']) &&
+                        $dayData['start_time'] >= $dayData['end_time']
+                    ) {
+                        $request->validate([
+                            "working_hours.{$day}.end_time" => 'after:' . $dayData['start_time'],
+                        ], [
+                            "working_hours.{$day}.end_time.after" => "{$day}: end time must be after start time.",
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return response()->json(['valid' => true]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
             'phone'           => ['required', 'string', 'max:50', 'regex:/^(?:0(?:1|3|5)\d{6}|(?:70|71|76|78|79|81)\d{6}|\+961(?:1|3|5|70|71|76|78|79|81)\d{6})$/', 'unique:municipalities,phone'],
-            'email'           => 'nullable|email|max:255|unique:municipalities,email',
+            'email'           => 'required|email|max:255|unique:municipalities,email',
             'city'            => 'required|string|max:255',
             'street'          => 'required|string|max:255',
-            'building'        => 'nullable|string|max:255',
+            'building'        => 'required|string|max:255',
             'google_maps_url' => 'nullable|url|max:1000',
             'latitude'        => 'nullable|numeric|between:-90,90',
             'longitude'       => 'nullable|numeric|between:-180,180',
@@ -134,14 +202,14 @@ class MunicipalityController extends Controller
                 Rule::unique('municipalities', 'phone')->ignore($municipality->id),
             ],
             'email'           => [
-                'nullable',
+                'required',
                 'email',
                 'max:255',
                 Rule::unique('municipalities', 'email')->ignore($municipality->id),
             ],
-            'city'            => 'nullable|string|max:255',
-            'street'          => 'nullable|string|max:255',
-            'building'        => 'nullable|string|max:255',
+            'city'            => 'required|string|max:255',
+            'street'          => 'required|string|max:255',
+            'building'        => 'required|string|max:255',
             'google_maps_url' => 'nullable|url|max:1000',
             'latitude'        => 'nullable|numeric|between:-90,90',
             'longitude'       => 'nullable|numeric|between:-180,180',

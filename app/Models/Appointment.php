@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\RequestTimelineService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -35,6 +36,15 @@ class Appointment extends Model
         'reminder_sent_at' => 'datetime',
         'email_notified_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Appointment $appointment) {
+            if ($appointment->status === self::STATUS_REQUESTED) {
+                app(RequestTimelineService::class)->recordAppointmentRequested($appointment);
+            }
+        });
+    }
 
     public static function statuses(): array
     {

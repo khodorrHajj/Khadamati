@@ -46,9 +46,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('citizen.dashboard') }}#notifications" class="nav-link">
+                    <a href="{{ route('citizen.notifications.index') }}" class="nav-link {{ request()->routeIs('citizen.notifications.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-bell"></i>
-                        <p>Notifications</p>
+                        <p>
+                            Notifications
+                            <span id="citizen-sidebar-notification-badge" data-notification-count-badge class="right badge badge-warning {{ $citizenUnreadCount ? '' : 'd-none' }}">{{ $citizenUnreadCount }}</span>
+                        </p>
                     </a>
                 </li>
                 <li class="nav-item">

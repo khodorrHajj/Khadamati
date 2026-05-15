@@ -37,6 +37,20 @@ class DashboardController extends Controller
         $missingDocumentsRequests = (clone $requestsQuery)
             ->where('status', ServiceRequest::STATUS_MISSING_DOCUMENTS)
             ->count();
+        $assignedToMeRequests = (clone $requestsQuery)
+            ->where('assigned_to_user_id', Auth::id())
+            ->count();
+        $awaitingAdminRequests = (clone $requestsQuery)
+            ->where('workflow_state', ServiceRequest::WORKFLOW_AWAITING_ADMIN)
+            ->count();
+        $awaitingMunicipalityRequests = (clone $requestsQuery)
+            ->where('workflow_state', ServiceRequest::WORKFLOW_AWAITING_MUNICIPALITY)
+            ->count();
+        $overdueRequests = (clone $requestsQuery)
+            ->with('service')
+            ->get()
+            ->filter->isOverdue()
+            ->count();
 
         return view('Municipality.Dashboard', compact(
             'office',
@@ -46,7 +60,11 @@ class DashboardController extends Controller
             'pendingRequests',
             'inReviewRequests',
             'completedRequests',
-            'missingDocumentsRequests'
+            'missingDocumentsRequests',
+            'assignedToMeRequests',
+            'awaitingAdminRequests',
+            'awaitingMunicipalityRequests',
+            'overdueRequests'
         ));
     }
 }

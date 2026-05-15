@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\RequestTimelineService;
 use Illuminate\Database\Eloquent\Model;
 
 class RequestDocument extends Model
@@ -13,6 +14,17 @@ class RequestDocument extends Model
         'original_name',
         'document_type',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (RequestDocument $requestDocument) {
+            $requestDocument->loadMissing(['serviceRequest.service', 'uploader.role']);
+
+            if ($requestDocument->serviceRequest) {
+                app(RequestTimelineService::class)->recordDocumentUploaded($requestDocument->serviceRequest, $requestDocument);
+            }
+        });
+    }
 
     public function serviceRequest()
     {

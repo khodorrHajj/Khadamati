@@ -9,7 +9,7 @@ use App\Models\ServiceRequest;
 
 class MunicipalityRequestListingService
 {
-    public function build(GovernmentOffice $office, array $filters): array
+    public function build(GovernmentOffice $office, array $filters, ?int $municipalityUserId = null): array
     {
         $services = Service::with('serviceCategory')
             ->where('government_office_id', $office->id)
@@ -21,12 +21,25 @@ class MunicipalityRequestListingService
             ->get();
 
         $requests = ServiceRequest::with(['user', 'service.serviceCategory'])
+            ->with(['assignedTo'])
             ->withCount('requestDocuments')
             ->whereHas('service', function ($query) use ($office) {
                 $query->where('government_office_id', $office->id);
             })
             ->when($filters['status'], function ($query) use ($filters) {
                 $query->where('status', $filters['status']);
+            })
+            ->when(($filters['handoff_scope'] ?? 'all') === 'assigned_to_me' && $municipalityUserId, function ($query) use ($municipalityUserId) {
+                $query->where('assigned_to_user_id', $municipalityUserId);
+            })
+            ->when(($filters['handoff_scope'] ?? 'all') === 'unassigned', function ($query) {
+                $query->whereNull('assigned_to_user_id');
+            })
+            ->when(($filters['handoff_scope'] ?? 'all') === 'awaiting_admin', function ($query) {
+                $query->where('workflow_state', ServiceRequest::WORKFLOW_AWAITING_ADMIN);
+            })
+            ->when(($filters['handoff_scope'] ?? 'all') === 'awaiting_municipality', function ($query) {
+                $query->where('workflow_state', ServiceRequest::WORKFLOW_AWAITING_MUNICIPALITY);
             })
             ->when($filters['service'], function ($query) use ($filters) {
                 $query->where('service_id', $filters['service']);
@@ -58,6 +71,13 @@ class MunicipalityRequestListingService
 
         return [
             'categories' => $categories,
+            'handoffScopes' => [
+                'all' => 'All Requests',
+                'assigned_to_me' => 'Assigned To Me',
+                'unassigned' => 'Unassigned',
+                'awaiting_admin' => 'Awaiting Admin',
+                'awaiting_municipality' => 'Awaiting Municipality',
+            ],
             'requests' => $requests,
             'services' => $services,
             'statuses' => ServiceRequest::statuses(),

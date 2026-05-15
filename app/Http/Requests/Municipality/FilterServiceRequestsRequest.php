@@ -19,6 +19,7 @@ class FilterServiceRequestsRequest extends FormRequest
 
         return [
             'status' => ['nullable', Rule::in(ServiceRequest::statuses())],
+            'handoff_scope' => ['nullable', Rule::in(['all', 'assigned_to_me', 'unassigned', 'awaiting_admin', 'awaiting_municipality'])],
             'service' => [
                 'nullable',
                 Rule::exists('services', 'id')->where(function ($query) use ($officeId) {
@@ -43,6 +44,7 @@ class FilterServiceRequestsRequest extends FormRequest
 
         return [
             'status' => $validated['status'] ?? null,
+            'handoff_scope' => $validated['handoff_scope'] ?? 'all',
             'service' => $validated['service'] ?? null,
             'category' => $validated['category'] ?? null,
             'date_from' => $validated['date_from'] ?? null,

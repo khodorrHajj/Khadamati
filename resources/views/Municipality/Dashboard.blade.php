@@ -134,5 +134,50 @@
                 </a>
             </div>
         </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-dark">
+                <div class="inner">
+                    <h3>{{ $assignedToMeRequests }}</h3>
+                    <p>Assigned To Me</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <a href="{{ route('municipality.requests.index', ['handoff_scope' => 'assigned_to_me']) }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-maroon">
+                <div class="inner">
+                    <h3>{{ $awaitingAdminRequests }}</h3>
+                    <p>Awaiting Admin</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <a href="{{ route('municipality.requests.index', ['handoff_scope' => 'awaiting_admin']) }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ $overdueRequests }}</h3>
+                    <p>Overdue Requests</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <a href="{{ route('municipality.requests.index') }}" class="small-box-footer">
+                    Review <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
     </div>
 @endsection

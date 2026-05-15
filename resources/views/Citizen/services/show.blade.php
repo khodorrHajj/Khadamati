@@ -35,11 +35,15 @@
                             </tr>
                             <tr>
                                 <th>Price</th>
-                                <td>${{ number_format((float) $service->price, 2) }}</td>
+                                <td>{{ $service->formattedPrice() }}</td>
                             </tr>
                             <tr>
                                 <th>Estimated Duration</th>
-                                <td>{{ $service->duration_days }} day{{ $service->duration_days === 1 ? '' : 's' }}</td>
+                                <td>{{ $service->durationLabel() }}</td>
+                            </tr>
+                            <tr>
+                                <th>Office Location</th>
+                                <td>{{ $service->governmentOffice?->formatted_address ?: ($service->governmentOffice?->city ?: 'Open the office page to view location details.') }}</td>
                             </tr>
                             <tr>
                                 <th>Description</th>
@@ -48,7 +52,7 @@
                             <tr>
                                 <th>Required Documents</th>
                                 <td>
-                                    @php($documents = preg_split('/\r\n|\r|\n/', (string) $service->required_documents, -1, PREG_SPLIT_NO_EMPTY))
+                                    @php($documents = $service->requiredDocumentList())
                                     @if (count($documents))
                                         @foreach ($documents as $document)
                                             <div>{{ $document }}</div>

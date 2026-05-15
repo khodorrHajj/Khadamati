@@ -28,6 +28,16 @@ class ServiceRequestPolicy
         return $this->belongsToUsersOffice($user, $serviceRequest);
     }
 
+    public function viewAdmin(User $user, ServiceRequest $serviceRequest): Response
+    {
+        return $this->isAdmin($user);
+    }
+
+    public function updateAdmin(User $user, ServiceRequest $serviceRequest): Response
+    {
+        return $this->isAdmin($user);
+    }
+
     private function ownsRequest(User $user, ServiceRequest $serviceRequest): Response
     {
         if ($serviceRequest->user_id !== $user->id) {
@@ -41,6 +51,15 @@ class ServiceRequestPolicy
     {
         if (!$serviceRequest->service || $serviceRequest->service->government_office_id !== $user->government_office_id) {
             return Response::denyAsNotFound();
+        }
+
+        return Response::allow();
+    }
+
+    private function isAdmin(User $user): Response
+    {
+        if (!$user->hasRole('admin')) {
+            return Response::deny();
         }
 
         return Response::allow();
