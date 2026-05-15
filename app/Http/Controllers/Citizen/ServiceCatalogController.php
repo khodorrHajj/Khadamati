@@ -16,8 +16,11 @@ use App\Models\TimeSlot;
 use App\Notifications\NewServiceRequestNotification;
 use App\Notifications\RequestDocumentUploadedNotification;
 use App\Services\CitizenRequestDocumentService;
+use App\Services\CitizenNotificationService;
+use App\Services\CitizenOfficeDiscoveryService;
 use App\Services\CitizenServiceRequestService;
 use App\Services\MunicipalityOfficeNotificationService;
+use App\Services\RequestPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -84,17 +87,46 @@ class ServiceCatalogController extends Controller
         return view('Citizen.services.index', compact('categories', 'filters', 'municipalities', 'offices', 'services'));
     }
 
-    public function offices()
+    public function offices(Request $request, CitizenOfficeDiscoveryService $officeDiscoveryService)
     {
-        $offices = GovernmentOffice::with('municipality')
-            ->where('status', 'active')
-            ->whereHas('services', function ($query) {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'municipality' => ['nullable', 'integer', 'exists:municipalities,id'],
+            'category' => ['nullable', 'integer', 'exists:service_categories,id'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'radius_km' => ['nullable', 'numeric', 'min:1', 'max:500'],
+        ]);
+
+        $municipalities = Municipality::whereHas('governmentOffices.services', function ($query) {
                 $query->where('is_active', true);
             })
+            ->whereHas('governmentOffices', function ($query) {
+                $query->where('status', 'active');
+            })
             ->orderBy('name')
-            ->paginate(9);
+            ->get();
 
-        return view('Citizen.offices.index', compact('offices'));
+        $categories = ServiceCategory::whereHas('services', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->whereHas('governmentOffice', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->orderBy('name')
+            ->get();
+
+        $data = $officeDiscoveryService->build($filters);
+        $offices = $data['offices'];
+        $hasLocationFilter = $data['hasLocationFilter'];
+
+        return view('Citizen.offices.index', compact(
+            'categories',
+            'filters',
+            'hasLocationFilter',
+            'municipalities',
+            'offices'
+        ));
     }
 
     public function office(GovernmentOffice $office)
@@ -157,7 +189,8 @@ class ServiceCatalogController extends Controller
         StoreServiceRequestRequest $request,
         Service $service,
         CitizenServiceRequestService $serviceRequestService,
-        MunicipalityOfficeNotificationService $notificationService
+        MunicipalityOfficeNotificationService $notificationService,
+        CitizenNotificationService $citizenNotificationService
     )
     {
         $service->load(['governmentOffice.municipality', 'serviceCategory']);
@@ -174,6 +207,9 @@ class ServiceCatalogController extends Controller
         $notificationService->notifyForServiceRequest(
             $serviceRequest,
             new NewServiceRequestNotification($serviceRequest)
+        );
+        $citizenNotificationService->notifyRequestSubmitted(
+            $serviceRequest->fresh(['user', 'service.governmentOffice'])
         );
 
         return redirect()
@@ -247,6 +283,7 @@ class ServiceCatalogController extends Controller
             'requestDocuments',
             'feedback.responder',
             'requestMessages.sender.role',
+            'timelineEntries.actor.role',
         ]);
 
         $currentAppointment = $serviceRequest->appointments
@@ -295,6 +332,13 @@ class ServiceCatalogController extends Controller
             $serviceRequest->official_response_path,
             $serviceRequest->official_response_original_name ?: basename($serviceRequest->official_response_path)
         );
+    }
+
+    public function downloadReceipt(ServiceRequest $serviceRequest, RequestPdfService $requestPdfService)
+    {
+        $this->authorizeOrAbort('viewCitizen', $serviceRequest);
+
+        return $requestPdfService->downloadReceipt($serviceRequest);
     }
 
     public function storeDocument(

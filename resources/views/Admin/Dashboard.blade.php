@@ -33,8 +33,8 @@
         <div class="col-lg-4 col-12">
             <div class="small-box bg-info">
                 <div class="inner">
-                    <h3>Municipalities</h3>
-                    <p>Manage Municipalities</p>
+                    <h3>{{ $municipalityCount }}</h3>
+                    <p>Municipalities</p>
                 </div>
                 <div class="icon">
                     <i class="fas fa-city"></i>
@@ -48,8 +48,8 @@
         <div class="col-lg-4 col-12">
             <div class="small-box bg-success">
                 <div class="inner">
-                    <h3>Offices</h3>
-                    <p>Manage Government Offices</p>
+                    <h3>{{ $officeCount }}</h3>
+                    <p>Government Offices</p>
                 </div>
                 <div class="icon">
                     <i class="fas fa-building"></i>
@@ -63,8 +63,8 @@
         <div class="col-lg-4 col-12">
             <div class="small-box bg-warning">
                 <div class="inner">
-                    <h3>Users</h3>
-                    <p>Manage Municipality Users</p>
+                    <h3>{{ $municipalityUserCount }}</h3>
+                    <p>Municipality Users</p>
                 </div>
                 <div class="icon">
                     <i class="fas fa-users"></i>
@@ -76,15 +76,60 @@
         </div>
 
         <div class="col-lg-4 col-12">
-            <div class="small-box bg-danger">
+            <div class="small-box bg-primary">
                 <div class="inner">
-                    <h3>Reports</h3>
-                    <p>Platform Analytics</p>
+                    <h3>{{ $requestStats['total'] }}</h3>
+                    <p>Total Requests</p>
                 </div>
                 <div class="icon">
-                    <i class="fas fa-chart-line"></i>
+                    <i class="fas fa-file-signature"></i>
                 </div>
-                <a href="{{ route('admin.reports.index') }}" class="small-box-footer">
+                <a href="{{ route('admin.requests.index') }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-12">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ $requestStats['awaitingAdmin'] }}</h3>
+                    <p>Awaiting Admin</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <a href="{{ route('admin.requests.index', ['workflow_state' => \App\Models\ServiceRequest::WORKFLOW_AWAITING_ADMIN]) }}" class="small-box-footer">
+                    Open <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-12">
+            <div class="small-box bg-secondary">
+                <div class="inner">
+                    <h3>{{ $requestStats['overdue'] }}</h3>
+                    <p>Overdue Requests</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <a href="{{ route('admin.requests.index') }}" class="small-box-footer">
+                    Review <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-12">
+            <div class="small-box bg-dark">
+                <div class="inner">
+                    <h3>{{ $requestStats['unassigned'] }}</h3>
+                    <p>Unassigned Requests</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <a href="{{ route('admin.requests.index', ['assignment_scope' => 'unassigned']) }}" class="small-box-footer">
                     Open <i class="fas fa-arrow-circle-right"></i>
                 </a>
             </div>

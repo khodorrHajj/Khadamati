@@ -13,7 +13,11 @@ use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
-    public function store(StoreAppointmentRequest $request, ServiceRequest $serviceRequest, AppointmentEmailHook $emailHook): RedirectResponse
+    public function store(
+        StoreAppointmentRequest $request,
+        ServiceRequest $serviceRequest,
+        AppointmentEmailHook $emailHook
+    ): RedirectResponse
     {
         $this->authorizeOrAbort('createForCitizen', [Appointment::class, $serviceRequest]);
 

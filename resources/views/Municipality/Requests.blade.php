@@ -34,6 +34,18 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
+                            <label>Workflow</label>
+                            <select name="handoff_scope" class="custom-select">
+                                @foreach ($handoffScopes as $scopeValue => $scopeLabel)
+                                    <option value="{{ $scopeValue }}" {{ ($filters['handoff_scope'] ?? 'all') === $scopeValue ? 'selected' : '' }}>
+                                        {{ $scopeLabel }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
                             <label>Service</label>
                             <select name="service" class="custom-select">
                                 <option value="">All Services</option>
@@ -87,7 +99,7 @@
                     <div class="col-md-6 d-flex align-items-end">
                         <div class="btn-group mb-3">
                             <button type="submit" class="btn btn-primary">Apply Filters</button>
-                            @if ($filters['status'] || $filters['service'] || $filters['category'] || $filters['date_from'] || $filters['date_to'] || $filters['search'])
+                            @if ($filters['status'] || $filters['service'] || $filters['category'] || $filters['date_from'] || $filters['date_to'] || $filters['search'] || (($filters['handoff_scope'] ?? 'all') !== 'all'))
                                 <a href="{{ route('municipality.requests.index') }}" class="btn btn-secondary">Clear</a>
                             @endif
                         </div>
@@ -99,38 +111,59 @@
             <table class="table table-bordered table-striped mb-0">
                 <thead>
                     <tr>
-                        <th>Request ID</th>
-                        <th>Citizen Name</th>
-                        <th>Service Name</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>Documents</th>
-                        <th>Created Date</th>
+                        <th>Request</th>
+                        <th>Citizen</th>
+                        <th>Service</th>
+                        <th>Progress</th>
                         <th style="width: 120px;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($requests as $requestItem)
                         <tr>
-                            <td>#{{ $requestItem->id }}</td>
+                            <td>
+                                <strong>#{{ $requestItem->id }}</strong>
+                                <div class="text-muted small">{{ $requestItem->tracking_code }}</div>
+                                <div class="text-muted small">{{ optional($requestItem->created_at)->format('Y-m-d H:i') }}</div>
+                            </td>
                             <td>
                                 <div>{{ $requestItem->user->name ?? 'Unknown Citizen' }}</div>
                                 <div class="text-muted small">{{ $requestItem->user->email ?? '-' }}</div>
                             </td>
-                            <td>{{ $requestItem->service->name ?? '-' }}</td>
-                            <td>{{ $requestItem->service && $requestItem->service->serviceCategory ? $requestItem->service->serviceCategory->name : '-' }}</td>
+                            <td>
+                                <div>{{ $requestItem->service->name ?? '-' }}</div>
+                                <div class="text-muted small">{{ $requestItem->service && $requestItem->service->serviceCategory ? $requestItem->service->serviceCategory->name : '-' }}</div>
+                            </td>
                             <td>
                                 <span class="badge badge-light border">{{ $requestItem->status }}</span>
+                                @if ($requestItem->needsCitizenDocuments())
+                                    <span class="badge badge-warning ml-1">Citizen Action Needed</span>
+                                @elseif ($requestItem->isOverdue())
+                                    <span class="badge badge-danger ml-1">Overdue</span>
+                                @endif
+                                <div class="small mt-1">
+                                    @if ($requestItem->isClosed())
+                                        <span class="badge badge-success">Closed</span>
+                                    @elseif ($requestItem->isAwaitingAdmin())
+                                        <span class="badge badge-danger">Awaiting Admin</span>
+                                    @else
+                                        <span class="badge badge-info">Awaiting Municipality</span>
+                                    @endif
+                                    @if ($requestItem->assignedTo)
+                                        <div class="text-muted mt-1">Assigned to {{ $requestItem->assignedTo->name }}</div>
+                                    @endif
+                                </div>
+                                <div class="text-muted small mt-2">
+                                    {{ $requestItem->request_documents_count }} document{{ $requestItem->request_documents_count === 1 ? '' : 's' }}
+                                </div>
                             </td>
-                            <td>{{ $requestItem->request_documents_count }}</td>
-                            <td>{{ optional($requestItem->created_at)->format('Y-m-d H:i') }}</td>
                             <td>
                                 <a href="{{ route('municipality.requests.show', $requestItem) }}" class="btn btn-primary btn-sm">View</a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center">No requests found.</td>
+                            <td colspan="5" class="text-center">No requests found.</td>
                         </tr>
                     @endforelse
                 </tbody>

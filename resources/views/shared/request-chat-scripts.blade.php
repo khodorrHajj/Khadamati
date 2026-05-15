@@ -16,12 +16,28 @@
                     });
                 }
 
-                function messageHtml(message, currentUserId) {
+                function messageHtml(message, currentUserId, style) {
                     const isMine = Number(message.sender_id) === Number(currentUserId);
                     const body = message.body ? `<div class="mb-2">${escapeHtml(message.body).replace(/\n/g, '<br>')}</div>` : '';
                     const attachment = message.attachment_url ? `<a href="${escapeHtml(message.attachment_url)}" target="_blank" rel="noopener">Open attachment</a>` : '';
                     const role = message.sender_role ? `<span class="badge badge-light border ml-2">${escapeHtml(message.sender_role.charAt(0).toUpperCase() + message.sender_role.slice(1))}</span>` : '';
                     const createdAt = message.created_at || message.created_at_human || '';
+
+                    if (style === 'bubbles') {
+                        return `
+                            <div class="mb-3 d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'}" data-message-id="${message.id}">
+                                <div class="rounded-lg border px-3 py-2 ${isMine ? 'bg-primary text-white' : 'bg-white'}" style="max-width: 78%;">
+                                    <div class="small ${isMine ? 'text-white-50' : 'text-muted'} mb-1">
+                                        ${escapeHtml(message.sender_name)}
+                                        ${message.sender_role ? `· ${escapeHtml(message.sender_role.charAt(0).toUpperCase() + message.sender_role.slice(1))}` : ''}
+                                    </div>
+                                    ${body}
+                                    ${attachment ? `<div class="mt-2">${attachment}</div>` : ''}
+                                    <div class="small ${isMine ? 'text-white-50' : 'text-muted'} mt-2">${escapeHtml(createdAt)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
 
                     return `
                         <div class="border rounded p-3 mb-3 ${isMine ? 'bg-light' : ''}" data-message-id="${message.id}">
@@ -38,7 +54,7 @@
                     `;
                 }
 
-                function appendMessage(container, message, currentUserId) {
+                function appendMessage(container, message, currentUserId, style) {
                     if (!container || container.querySelector(`[data-message-id="${message.id}"]`)) {
                         return;
                     }
@@ -48,7 +64,7 @@
                         emptyState.remove();
                     }
 
-                    container.insertAdjacentHTML('beforeend', messageHtml(message, currentUserId));
+                    container.insertAdjacentHTML('beforeend', messageHtml(message, currentUserId, style));
                     container.scrollTop = container.scrollHeight;
                 }
 
@@ -99,6 +115,7 @@
                     const messages = chat.querySelector('[data-chat-messages]');
                     const currentUserId = chat.dataset.currentUserId;
                     const requestId = chat.dataset.requestId;
+                    const style = chat.dataset.chatStyle || 'cards';
 
                     if (messages) {
                         messages.scrollTop = messages.scrollHeight;
@@ -151,7 +168,7 @@
                                 }
 
                                 const data = await response.json();
-                                appendMessage(messages, data.message, currentUserId);
+                                appendMessage(messages, data.message, currentUserId, style);
                                 form.reset();
                                 refreshUnreadBadges();
                             } catch (error) {
@@ -168,7 +185,7 @@
                     if (window.Echo && requestId && messages) {
                         window.Echo.private(`request-chat.${requestId}`)
                             .listen('.message.sent', function (event) {
-                                appendMessage(messages, event.message, currentUserId);
+                                appendMessage(messages, event.message, currentUserId, style);
                                 refreshUnreadBadges();
                             });
                     } else if (isLocalEnvironment && !window.Echo) {

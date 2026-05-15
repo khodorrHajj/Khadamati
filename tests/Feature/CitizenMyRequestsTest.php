@@ -48,7 +48,10 @@ class CitizenMyRequestsTest extends TestCase
             ->assertSee($serviceRequest->service->name)
             ->assertSee($serviceRequest->service->governmentOffice->name)
             ->assertSee($serviceRequest->service->governmentOffice->municipality->name)
-            ->assertSee('Please handle carefully.');
+            ->assertSee('Please handle carefully.')
+            ->assertSee('Track With QR Code')
+            ->assertSee('data-request-tracking-qr', false)
+            ->assertSee(route('tracking.show', $serviceRequest->tracking_code), false);
     }
 
     public function test_citizen_cannot_view_another_citizens_request(): void
@@ -100,6 +103,46 @@ class CitizenMyRequestsTest extends TestCase
             ->get(route('citizen.requests.official-response.download', $serviceRequest))
             ->assertOk()
             ->assertDownload('official-response.pdf');
+    }
+
+    public function test_citizen_sees_missing_documents_guidance_and_upload_actions(): void
+    {
+        $citizen = $this->userWithRole('citizen');
+        $serviceRequest = $this->serviceRequestFor($citizen, [
+            'status' => ServiceRequest::STATUS_MISSING_DOCUMENTS,
+            'message' => 'Please upload a clearer ID copy and a proof of residence.',
+        ]);
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.requests.show', $serviceRequest))
+            ->assertOk()
+            ->assertSee('Missing Documents')
+            ->assertSee('Please upload a clearer ID copy and a proof of residence.')
+            ->assertSee('Upload Requested Documents')
+            ->assertSee('Ask The Municipality');
+    }
+
+    public function test_citizen_sees_overdue_warning_and_message_path(): void
+    {
+        $citizen = $this->userWithRole('citizen');
+        $serviceRequest = $this->serviceRequestFor($citizen, [
+            'status' => ServiceRequest::STATUS_IN_REVIEW,
+        ]);
+        $serviceRequest->forceFill([
+            'created_at' => now()->subDays(5),
+            'updated_at' => now()->subDays(5),
+        ])->save();
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.requests.show', $serviceRequest))
+            ->assertOk()
+            ->assertSee('Request Overdue')
+            ->assertSee('Message Municipality');
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.requests.index'))
+            ->assertOk()
+            ->assertSee('Overdue');
     }
 
     public function test_filters_work(): void

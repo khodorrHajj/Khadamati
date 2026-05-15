@@ -10,6 +10,8 @@ use App\Policies\AppointmentPolicy;
 use App\Policies\FeedbackPolicy;
 use App\Policies\RequestMessagePolicy;
 use App\Policies\ServiceRequestPolicy;
+use App\Services\AdminNavbarDataService;
+use App\Services\CitizenNavbarDataService;
 use App\Services\MunicipalityNavbarDataService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -40,18 +42,12 @@ class AppServiceProvider extends ServiceProvider
             $view->with(app(MunicipalityNavbarDataService::class)->forUser(Auth::user()));
         });
 
-        View::composer(['includes.citizen-navbar', 'includes.citizen-sidebar'], function ($view) {
-            $user = Auth::user();
+        View::composer(['includes.admin-navbar', 'includes.admin-sidebar'], function ($view) {
+            $view->with(app(AdminNavbarDataService::class)->forUser(Auth::user()));
+        });
 
-            $view->with('citizenUnreadMessageCount', $user
-                ? RequestMessage::query()
-                    ->unread()
-                    ->where('sender_id', '!=', $user->id)
-                    ->whereHas('serviceRequest', function ($query) use ($user) {
-                        $query->where('user_id', $user->id);
-                    })
-                    ->count()
-                : 0);
+        View::composer(['includes.citizen-navbar', 'includes.citizen-sidebar'], function ($view) {
+            $view->with(app(CitizenNavbarDataService::class)->forUser(Auth::user()));
         });
     }
 }

@@ -14,23 +14,32 @@ class RequestMessageController extends Controller
 {
     public function index()
     {
-        $requests = ServiceRequest::with([
-            'service.governmentOffice',
-            'requestMessages.sender.role',
-        ])
-            ->where('user_id', Auth::id())
-            ->whereHas('requestMessages')
-            ->withCount([
-                'requestMessages as unread_messages_count' => function ($query) {
-                    $query->unread()
-                        ->where('sender_id', '!=', Auth::id());
-                },
-            ])
-            ->withMax('requestMessages', 'created_at')
-            ->orderByDesc('request_messages_max_created_at')
+        $requests = $this->conversationQuery()
             ->paginate(10);
 
         return view('Citizen.messages.index', compact('requests'));
+    }
+
+    public function show(ServiceRequest $serviceRequest)
+    {
+        $this->authorizeOrAbort('viewCitizen', $serviceRequest);
+
+        $serviceRequest->load([
+            'service.governmentOffice.municipality',
+            'requestMessages.sender.role',
+        ]);
+
+        $this->markIncomingMessagesAsRead($serviceRequest);
+
+        $requests = $this->conversationQuery()->get();
+
+        return view('Citizen.messages.show', [
+            'activeRequest' => $serviceRequest->fresh([
+                'service.governmentOffice.municipality',
+                'requestMessages.sender.role',
+            ]),
+            'requests' => $requests,
+        ]);
     }
 
     public function store(StoreRequestMessageRequest $request, ServiceRequest $serviceRequest)
@@ -89,5 +98,31 @@ class RequestMessageController extends Controller
             'created_at' => optional($message->created_at)->format('Y-m-d H:i'),
             'created_at_human' => optional($message->created_at)->diffForHumans(),
         ];
+    }
+
+    private function conversationQuery()
+    {
+        return ServiceRequest::with([
+            'service.governmentOffice',
+            'requestMessages.sender.role',
+        ])
+            ->where('user_id', Auth::id())
+            ->whereHas('requestMessages')
+            ->withCount([
+                'requestMessages as unread_messages_count' => function ($query) {
+                    $query->unread()
+                        ->where('sender_id', '!=', Auth::id());
+                },
+            ])
+            ->withMax('requestMessages', 'created_at')
+            ->orderByDesc('request_messages_max_created_at');
+    }
+
+    private function markIncomingMessagesAsRead(ServiceRequest $serviceRequest): void
+    {
+        $serviceRequest->requestMessages()
+            ->whereNull('read_at')
+            ->where('sender_id', '!=', Auth::id())
+            ->update(['read_at' => now()]);
     }
 }

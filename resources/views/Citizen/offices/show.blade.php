@@ -60,6 +60,16 @@
                                     @endif
                                 </td>
                             </tr>
+                            <tr>
+                                <th>Coordinates</th>
+                                <td>
+                                    @if ($office->hasCoordinates())
+                                        {{ $office->latitude }}, {{ $office->longitude }}
+                                    @else
+                                        <span class="text-muted">No coordinates available.</span>
+                                    @endif
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -87,6 +97,22 @@
                     @else
                         <p class="text-muted mb-0">No working hours listed.</p>
                     @endif
+
+                    @if ($office->hasCoordinates())
+                        <div class="mt-4">
+                            <h4 class="h6">Map Preview</h4>
+                            <div class="border rounded overflow-hidden">
+                                <iframe
+                                    title="Map preview for {{ $office->name }}"
+                                    src="https://www.google.com/maps?q={{ $office->latitude }},{{ $office->longitude }}&z=15&output=embed"
+                                    width="100%"
+                                    height="260"
+                                    style="border:0;"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"></iframe>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -113,9 +139,9 @@
                         <tr>
                             <td>{{ $service->name }}</td>
                             <td>{{ $service->serviceCategory?->name ?? '-' }}</td>
-                            <td>${{ number_format((float) $service->price, 2) }}</td>
-                            <td>{{ $service->duration_days }} day{{ (int) $service->duration_days === 1 ? '' : 's' }}</td>
-                            <td>{{ $service->required_documents ?: 'No required documents listed.' }}</td>
+                            <td>{{ $service->formattedPrice() }}</td>
+                            <td>{{ $service->durationLabel() }}</td>
+                            <td>{{ implode(', ', $service->requiredDocumentList()) ?: 'No required documents listed.' }}</td>
                             <td>
                                 <a href="{{ route('citizen.services.request.create', $service) }}" class="btn btn-primary btn-sm">
                                     Start Request
@@ -132,22 +158,10 @@
         </div>
     </div>
 
-    <div class="row">
-        @forelse ($categories as $category)
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h3 class="h5">{{ $category->name }}</h3>
-                        <p>{{ $category->description ?: 'No category description available.' }}</p>
-                        <p class="text-muted">{{ $category->active_services_count }} active service{{ $category->active_services_count === 1 ? '' : 's' }}</p>
-                        <a href="{{ route('citizen.services.index', ['office' => $office->id, 'category' => $category->id]) }}" class="btn btn-outline-primary btn-sm">Browse Services</a>
-                    </div>
-                </div>
-            </div>
-        @empty
-            <div class="col-12">
-                <div class="alert alert-info mb-0">No active service categories are available for this office.</div>
-            </div>
-        @endforelse
-    </div>
+    @if ($categories->isNotEmpty())
+        <div class="alert alert-light border">
+            {{ $categories->count() }} service categor{{ $categories->count() === 1 ? 'y is' : 'ies are' }} available in this office.
+            Use the service list above or the office service filters to find what you need quickly.
+        </div>
+    @endif
 @endsection

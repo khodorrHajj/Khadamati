@@ -91,6 +91,8 @@ class CitizenServiceBrowsingTest extends TestCase
             'email' => 'registry@example.com',
             'street' => 'Main Street',
             'city' => 'Beirut',
+            'latitude' => 33.8938,
+            'longitude' => 35.5018,
             'working_hours' => 'Monday to Friday, 8:00 AM - 2:00 PM',
             'google_maps_url' => 'https://maps.example.test/registry',
         ]);
@@ -116,7 +118,54 @@ class CitizenServiceBrowsingTest extends TestCase
             ->assertSee('registry@example.com')
             ->assertSee('Monday')
             ->assertSee('Open map')
+            ->assertSee('Map Preview')
+            ->assertSee('output=embed', false)
             ->assertSee('Birth Certificate');
+    }
+
+    public function test_citizen_can_find_nearest_offices_by_coordinates(): void
+    {
+        $citizen = $this->userWithRole('citizen');
+        $nearOffice = $this->office([
+            'name' => 'Near Office',
+            'latitude' => 33.8938,
+            'longitude' => 35.5018,
+        ]);
+        $farOffice = $this->office([
+            'name' => 'Far Office',
+            'latitude' => 34.4367,
+            'longitude' => 35.8497,
+        ]);
+
+        $this->service(['name' => 'Near Service'], $nearOffice, $this->category($nearOffice));
+        $this->service(['name' => 'Far Service'], $farOffice, $this->category($farOffice));
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.offices.index', [
+                'latitude' => 33.8938,
+                'longitude' => 35.5018,
+                'radius_km' => 10,
+            ]))
+            ->assertOk()
+            ->assertSee('Near Office')
+            ->assertDontSee('Far Office')
+            ->assertSee('0.0 km away');
+    }
+
+    public function test_citizen_can_search_offices_by_service_name(): void
+    {
+        $citizen = $this->userWithRole('citizen');
+        $registryOffice = $this->office(['name' => 'Registry Office']);
+        $taxOffice = $this->office(['name' => 'Tax Office']);
+
+        $this->service(['name' => 'Birth Certificate'], $registryOffice, $this->category($registryOffice));
+        $this->service(['name' => 'Tax Clearance'], $taxOffice, $this->category($taxOffice));
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.offices.index', ['search' => 'Birth Certificate']))
+            ->assertOk()
+            ->assertSee('Registry Office')
+            ->assertDontSee('Tax Office');
     }
 
     public function test_admin_and_municipality_users_cannot_access_citizen_browsing_pages(): void

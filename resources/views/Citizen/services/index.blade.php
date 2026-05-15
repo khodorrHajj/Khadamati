@@ -86,15 +86,18 @@
                             <dd class="col-sm-7">{{ $service->governmentOffice?->municipality?->name ?? '-' }}</dd>
 
                             <dt class="col-sm-5">Price</dt>
-                            <dd class="col-sm-7">${{ number_format((float) $service->price, 2) }}</dd>
+                            <dd class="col-sm-7">{{ $service->formattedPrice() }}</dd>
 
                             <dt class="col-sm-5">Duration</dt>
-                            <dd class="col-sm-7">{{ $service->duration_days }} day{{ (int) $service->duration_days === 1 ? '' : 's' }}</dd>
+                            <dd class="col-sm-7">{{ $service->durationLabel() }}</dd>
+
+                            <dt class="col-sm-5">Location</dt>
+                            <dd class="col-sm-7">{{ $service->governmentOffice?->city ?: ($service->governmentOffice?->formatted_address ?: 'See office page') }}</dd>
                         </dl>
 
                         <div class="mb-3">
                             <strong>Required Documents</strong>
-                            @php($documents = preg_split('/\r\n|\r|\n/', (string) $service->required_documents, -1, PREG_SPLIT_NO_EMPTY))
+                            @php($documents = $service->requiredDocumentList())
                             @if (count($documents))
                                 <ul class="pl-3 mb-0">
                                     @foreach ($documents as $document)

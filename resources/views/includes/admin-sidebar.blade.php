@@ -37,6 +37,21 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('admin.requests.index') }}" class="nav-link {{ request()->is('admin/requests*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-signature"></i>
+                        <p>Manage Requests</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-bell"></i>
+                        <p>
+                            Notifications
+                            <span data-notification-count-badge class="right badge badge-warning {{ $adminUnreadCount ? '' : 'd-none' }}">{{ $adminUnreadCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('admin.reports.index') }}" class="nav-link {{ request()->is('admin/reports*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-chart-line"></i>
                         <p>Reports</p>

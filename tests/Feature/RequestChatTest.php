@@ -254,7 +254,7 @@ class RequestChatTest extends TestCase
             ->assertSee($serviceRequest->tracking_code)
             ->assertSee($serviceRequest->status)
             ->assertDontSee('Hidden conversation.')
-            ->assertSee(route('citizen.requests.show', $serviceRequest) . '#messages', false);
+            ->assertSee(route('citizen.messages.show', $serviceRequest), false);
     }
 
     public function test_municipality_can_access_messages_page(): void
@@ -282,7 +282,25 @@ class RequestChatTest extends TestCase
             ->assertSee($serviceRequest->tracking_code)
             ->assertSee($office->name)
             ->assertDontSee('Other office conversation.')
-            ->assertSee(route('municipality.requests.show', $serviceRequest) . '#messages', false);
+            ->assertSee(route('municipality.messages.show', $serviceRequest), false);
+    }
+
+    public function test_municipality_message_shortcut_redirects_to_chat_page(): void
+    {
+        $office = $this->office();
+        $municipalityUser = $this->userWithRole('municipality', [
+            'government_office_id' => $office->id,
+        ]);
+        $serviceRequest = $this->serviceRequestFor($this->userWithRole('citizen'), $office);
+
+        $serviceRequest->requestMessages()->create([
+            'sender_id' => $serviceRequest->user_id,
+            'body' => 'Please review my request.',
+        ]);
+
+        $this->actingAs($municipalityUser)
+            ->get(route('municipality.messages.open'))
+            ->assertRedirect(route('municipality.messages.show', $serviceRequest));
     }
 
     public function test_sidebar_and_navbar_message_links_do_not_point_to_dashboard(): void
@@ -302,19 +320,20 @@ class RequestChatTest extends TestCase
         $this->actingAs($municipalityUser)
             ->get(route('municipality.dashboard'))
             ->assertOk()
-            ->assertSee(route('municipality.messages.index'), false)
+            ->assertSee(route('municipality.messages.open'), false)
             ->assertDontSee(route('municipality.dashboard') . '#messages', false);
     }
 
-    public function test_request_detail_chat_page_contains_request_id_and_echo_listener(): void
+    public function test_dedicated_chat_page_contains_request_id_and_echo_listener(): void
     {
         $citizen = $this->userWithRole('citizen');
         $serviceRequest = $this->serviceRequestFor($citizen);
 
         $this->actingAs($citizen)
-            ->get(route('citizen.requests.show', $serviceRequest))
+            ->get(route('citizen.messages.show', $serviceRequest))
             ->assertOk()
             ->assertSee('data-request-chat', false)
+            ->assertSee('data-chat-style="bubbles"', false)
             ->assertSee('data-request-id="' . $serviceRequest->id . '"', false)
             ->assertSee('Echo.private(`request-chat.${requestId}`)', false)
             ->assertSee("listen('.message.sent'", false);
@@ -349,7 +368,7 @@ class RequestChatTest extends TestCase
             ->assertJsonPath('unread_count', 1);
 
         $this->actingAs($citizen)
-            ->get(route('citizen.requests.show', $serviceRequest))
+            ->get(route('citizen.messages.show', $serviceRequest))
             ->assertOk();
 
         $this->actingAs($citizen)

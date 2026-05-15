@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GovernmentOfficeController;
 use App\Http\Controllers\Admin\MunicipalityController;
 use App\Http\Controllers\Admin\MunicipalityUserController;
+use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\RequestController;
 use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +42,17 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
         Route::get('/citizens/{citizen}', [CitizenAccountController::class, 'show'])->name('citizens.show');
         Route::patch('/citizens/{citizen}/activate', [CitizenAccountController::class, 'activate'])->name('citizens.activate');
         Route::patch('/citizens/{citizen}/deactivate', [CitizenAccountController::class, 'deactivate'])->name('citizens.deactivate');
+
+        Route::get('/requests', [RequestController::class, 'index'])->name('requests.index');
+        Route::get('/requests/poll', [RequestController::class, 'poll'])->name('requests.poll');
+        Route::get('/requests/{serviceRequest}', [RequestController::class, 'show'])->name('requests.show');
+        Route::get('/requests/{serviceRequest}/documents/{requestDocument}/download', [RequestController::class, 'downloadDocument'])->name('requests.documents.download');
+        Route::get('/requests/{serviceRequest}/receipt/download', [RequestController::class, 'downloadReceipt'])->name('requests.receipt.download');
+        Route::get('/requests/{serviceRequest}/official-response/download', [RequestController::class, 'downloadOfficialResponse'])->name('requests.official-response.download');
+        Route::match(['put', 'patch'], '/requests/{serviceRequest}', [RequestController::class, 'update'])->name('requests.update');
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     });

@@ -38,6 +38,9 @@ class ServiceController extends Controller
         $categories = ServiceCategory::where('government_office_id', $office->id)
             ->orderBy('name')
             ->get();
+        $requiredDocumentPresets = collect(config('required_documents.presets', []))
+            ->unique()
+            ->values();
 
         $services = Service::with('serviceCategory')
             ->where('government_office_id', $office->id)
@@ -60,6 +63,7 @@ class ServiceController extends Controller
         return view('Municipality.Services', compact(
             'categories',
             'office',
+            'requiredDocumentPresets',
             'search',
             'selectedCategory',
             'services',
@@ -84,7 +88,8 @@ class ServiceController extends Controller
             'description' => $validated['description'] ?? null,
             'price' => $validated['price'],
             'duration_days' => $validated['duration_days'],
-            'required_documents' => $validated['required_documents'] ?? null,
+            'duration_days_max' => $validated['duration_days_max'],
+            'required_documents' => $this->normalizeRequiredDocuments($validated),
             'is_active' => true,
         ]);
 
@@ -106,8 +111,11 @@ class ServiceController extends Controller
         $categories = ServiceCategory::where('government_office_id', $office->id)
             ->orderBy('name')
             ->get();
+        $requiredDocumentPresets = collect(config('required_documents.presets', []))
+            ->unique()
+            ->values();
 
-        return view('Municipality.services.edit', compact('categories', 'office', 'service'));
+        return view('Municipality.services.edit', compact('categories', 'office', 'requiredDocumentPresets', 'service'));
     }
 
     public function update(Request $request, Service $service)
@@ -128,7 +136,8 @@ class ServiceController extends Controller
             'description' => $validated['description'] ?? null,
             'price' => $validated['price'],
             'duration_days' => $validated['duration_days'],
-            'required_documents' => $validated['required_documents'] ?? null,
+            'duration_days_max' => $validated['duration_days_max'],
+            'required_documents' => $this->normalizeRequiredDocuments($validated),
         ]);
 
         return redirect()
@@ -195,7 +204,32 @@ class ServiceController extends Controller
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'duration_days' => ['required', 'integer', 'min:1'],
+            'duration_days_max' => ['required', 'integer', 'gte:duration_days'],
             'required_documents' => ['nullable', 'string'],
+            'required_documents_list' => ['nullable', 'array'],
+            'required_documents_list.*' => ['string', 'max:255'],
         ]);
+    }
+
+    private function normalizeRequiredDocuments(array $validated): ?string
+    {
+        $documents = collect($validated['required_documents_list'] ?? [])
+            ->merge(
+                collect(preg_split(
+                    '/\r\n|\r|\n/',
+                    (string) ($validated['required_documents'] ?? ''),
+                    -1,
+                    PREG_SPLIT_NO_EMPTY
+                ))
+            )
+            ->map(fn ($document) => trim((string) $document))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        return empty($documents)
+            ? null
+            : json_encode($documents, JSON_UNESCAPED_UNICODE);
     }
 }

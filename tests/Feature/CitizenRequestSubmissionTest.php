@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Notifications\CitizenRequestSubmittedNotification;
 use App\Notifications\NewServiceRequestNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -52,6 +53,7 @@ class CitizenRequestSubmissionTest extends TestCase
 
         $this->assertNotEmpty($serviceRequest->tracking_code);
         Notification::assertSentTo($municipalityUser, NewServiceRequestNotification::class);
+        Notification::assertSentTo($citizen, CitizenRequestSubmittedNotification::class);
     }
 
     public function test_citizen_cannot_create_request_for_inactive_service(): void
@@ -139,6 +141,27 @@ class CitizenRequestSubmissionTest extends TestCase
             'user_id' => $otherCitizen->id,
             'service_id' => $service->id,
         ]);
+    }
+
+    public function test_citizen_can_download_request_receipt_pdf(): void
+    {
+        Notification::fake();
+
+        $citizen = $this->userWithRole('citizen');
+        $service = $this->service();
+
+        $this->actingAs($citizen)
+            ->post(route('citizen.services.request.store', $service), [
+                'notes' => 'Receipt check.',
+            ])
+            ->assertRedirect();
+
+        $serviceRequest = ServiceRequest::firstOrFail();
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.requests.receipt.download', $serviceRequest))
+            ->assertOk()
+            ->assertDownload($serviceRequest->tracking_code . '-receipt.pdf');
     }
 
     public function test_municipality_user_cannot_submit_citizen_request(): void

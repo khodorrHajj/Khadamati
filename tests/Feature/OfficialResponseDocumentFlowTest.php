@@ -69,6 +69,40 @@ class OfficialResponseDocumentFlowTest extends TestCase
         $this->assertNull($serviceRequest->fresh()->official_response_path);
     }
 
+    public function test_municipality_can_generate_official_response_pdf_for_own_office_request(): void
+    {
+        Storage::fake('public');
+
+        $office = $this->office();
+        $citizen = $this->userWithRole('citizen');
+        $municipalityUser = $this->userWithRole('municipality', [
+            'government_office_id' => $office->id,
+        ]);
+        $serviceRequest = $this->serviceRequestForOffice($office, $citizen);
+
+        $this->actingAs($municipalityUser)
+            ->put(route('municipality.requests.update', $serviceRequest), [
+                'status' => ServiceRequest::STATUS_APPROVED,
+                'notes' => 'Approved and ready for collection.',
+                'official_response_document_type' => 'Approval Letter',
+                'generate_official_response_pdf' => '1',
+                'official_response_summary' => 'Your request has been approved. Please bring your tracking code when visiting the office.',
+            ])
+            ->assertRedirect(route('municipality.requests.show', $serviceRequest));
+
+        $serviceRequest->refresh();
+
+        $this->assertSame($municipalityUser->id, $serviceRequest->official_response_uploaded_by);
+        $this->assertSame($serviceRequest->tracking_code . '-official-response.pdf', $serviceRequest->official_response_original_name);
+        $this->assertSame('Approval Letter', $serviceRequest->official_response_document_type);
+        Storage::disk('public')->assertExists($serviceRequest->official_response_path);
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.requests.official-response.download', $serviceRequest))
+            ->assertOk()
+            ->assertDownload($serviceRequest->official_response_original_name);
+    }
+
     public function test_citizen_can_download_official_response_for_own_request(): void
     {
         Storage::fake('public');
@@ -124,6 +158,24 @@ class OfficialResponseDocumentFlowTest extends TestCase
             ->assertSessionHasErrors('official_response');
 
         $this->assertNull($serviceRequest->fresh()->official_response_path);
+    }
+
+    public function test_missing_documents_status_requires_a_citizen_facing_note(): void
+    {
+        $office = $this->office();
+        $municipalityUser = $this->userWithRole('municipality', [
+            'government_office_id' => $office->id,
+        ]);
+        $serviceRequest = $this->serviceRequestForOffice($office);
+
+        $this->actingAs($municipalityUser)
+            ->from(route('municipality.requests.show', $serviceRequest))
+            ->put(route('municipality.requests.update', $serviceRequest), [
+                'status' => ServiceRequest::STATUS_MISSING_DOCUMENTS,
+                'notes' => '',
+            ])
+            ->assertRedirect(route('municipality.requests.show', $serviceRequest))
+            ->assertSessionHasErrors('notes');
     }
 
     public function test_missing_official_response_file_returns_not_found(): void
