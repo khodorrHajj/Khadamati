@@ -109,4 +109,9 @@ class ServiceRequest extends Model
         return $this->hasMany(Appointment::class, 'service_request_id', 'id')
             ->latest();
     }
+
+    public function cryptoPayment()
+    {
+        return $this->hasOne(CryptoPayment::class, 'service_request_id', 'id');
+    }
 }

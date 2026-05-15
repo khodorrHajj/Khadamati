@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Citizen\CryptoPaymentController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,8 @@ Route::post('/dologin', [LoginController::class, 'doLogin'])->name('dologin');
 Route::get('/auth/google', [LoginController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('/auth/google/callback', [LoginController::class, 'handleGoogleCallback'])->name('google.callback');
 Route::get('/track/{trackingCode}', [TrackingController::class, 'show'])->name('tracking.show');
+
+Route::post('/webhook/nowpayments', [CryptoPaymentController::class, 'webhook'])->name('webhook.nowpayments');
 
 Route::middleware('check2fa')->group(function () {
     Route::get('/2fa', [LoginController::class, 'twoFactorForm'])->name('twofactor.form');

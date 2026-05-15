@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         'checkRole' => \App\Http\Middleware\CheckRole::class,
         'check2fa' => \App\Http\Middleware\CheckTwoFactorSession::class,
     ]);
+        $middleware->validateCsrfTokens(except: ['/webhook/nowpayments']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
