@@ -39,4 +39,9 @@ return [
         'driver' => env('SMS_DRIVER', 'stub'),
         'from' => env('SMS_FROM'),
     ],
+    'nowpayments' => [
+        'api_key'    => env('NOWPAYMENTS_API_KEY'),
+        'ipn_secret' => env('NOWPAYMENTS_IPN_SECRET'),
+        'sandbox'    => env('NOWPAYMENTS_SANDBOX', true),
+    ],
 ];

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Citizen\AppointmentController;
+use App\Http\Controllers\Citizen\CryptoPaymentController;
 use App\Http\Controllers\Citizen\DashboardController;
 use App\Http\Controllers\Citizen\FeedbackController;
 use App\Http\Controllers\Citizen\RequestMessageController;
@@ -31,4 +32,9 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
         Route::post('/requests/{serviceRequest}/messages', [RequestMessageController::class, 'store'])->name('requests.messages.store');
         Route::get('/messages/unread-count', [RequestMessageController::class, 'unreadCount'])->name('messages.unread-count');
         Route::post('/requests/{serviceRequest}/appointments', [AppointmentController::class, 'store'])->name('requests.appointments.store');
+
+        Route::get('/services/{service}/pay',  [CryptoPaymentController::class, 'show'])->name('payment.show');
+        Route::post('/services/{service}/pay', [CryptoPaymentController::class, 'create'])->name('payment.create');
+        Route::get('/payment/success',         [CryptoPaymentController::class, 'success'])->name('payment.success');
+        Route::get('/payment/cancelled',       [CryptoPaymentController::class, 'cancelled'])->name('payment.cancelled');
     });
