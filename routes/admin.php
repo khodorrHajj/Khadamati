@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\IdentityVerificationController;
 use App\Http\Controllers\Admin\MunicipalityController;
 use App\Http\Controllers\Admin\MunicipalityUserController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\RequestController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ServiceCategoryController;
@@ -73,6 +74,8 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');
         Route::get('/reports/export/csv', [ReportController::class, 'exportCsv'])->name('reports.export.csv');
+
+        Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
 
         // Services Overview
         Route::get('/services', [ServiceController::class, 'index'])->name('services.index');

@@ -5,6 +5,7 @@ use App\Http\Controllers\Municipality\DashboardController;
 use App\Http\Controllers\Municipality\FeedbackController;
 use App\Http\Controllers\Municipality\NotificationController;
 use App\Http\Controllers\Municipality\OfficeProfileController;
+use App\Http\Controllers\Municipality\PaymentController;
 use App\Http\Controllers\Municipality\ReportController;
 use App\Http\Controllers\Municipality\RequestController;
 use App\Http\Controllers\Municipality\RequestMessageController;
@@ -51,6 +52,7 @@ Route::middleware(['checkIfConnected', 'checkRole:municipality'])
         Route::patch('/feedback/{feedback}', [FeedbackController::class, 'update'])->name('feedback.update');
 
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::get('/messages/open', [RequestMessageController::class, 'open'])->name('messages.open');
         Route::get('/messages', [RequestMessageController::class, 'index'])->name('messages.index');
         Route::get('/messages/unread-count', [RequestMessageController::class, 'unreadCount'])->name('messages.unread-count');

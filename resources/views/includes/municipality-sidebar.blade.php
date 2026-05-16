@@ -73,6 +73,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('municipality.payments.index') }}" class="nav-link {{ request()->routeIs('municipality.payments.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-credit-card"></i>
+                        <p>Payment History</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="nav-link btn btn-link text-left">
