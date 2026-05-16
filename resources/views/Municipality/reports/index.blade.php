@@ -4,6 +4,7 @@
 @section('page-title', 'Office Reports')
 
 @section('content')
+    {{-- Stat Cards --}}
     <div class="row">
         <div class="col-lg-3 col-6">
             <div class="small-box bg-info">
@@ -27,37 +28,42 @@
             <div class="small-box bg-warning">
                 <div class="inner">
                     <h3>{{ number_format((float) $averageCompletionHours, 1) }}</h3>
-                    <p>Avg Completion Hours</p>
+                    <p>Avg Hours</p>
                 </div>
                 <div class="icon"><i class="fas fa-stopwatch"></i></div>
             </div>
         </div>
         <div class="col-lg-3 col-6">
-            <div class="small-box bg-primary">
+            <div class="small-box bg-secondary">
                 <div class="inner">
                     <h3>{{ $appointmentSummary['approved'] }}</h3>
-                    <p>Approved Appointments</p>
+                    <p>Approved Appts</p>
                 </div>
                 <div class="icon"><i class="fas fa-calendar-check"></i></div>
             </div>
         </div>
     </div>
 
+    {{-- Charts Row --}}
     <div class="row">
         <div class="col-lg-6">
             <div class="card">
-                <div class="card-header"><h3 class="card-title">Requests by Status</h3></div>
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-pie mr-1"></i> Requests by Status</h3>
+                </div>
                 <div class="card-body">
-                    <canvas id="municipality-status-chart" height="180"></canvas>
-                    <table class="table table-sm mt-3 mb-0">
-                        <tbody>
-                            @foreach ($statusData as $row)
-                                <tr>
-                                    <th>{{ $row['label'] }}</th>
-                                    <td>{{ $row['count'] }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
+                    <canvas id="municipality-status-chart" height="200"></canvas>
+                    <table class="table table-bordered table-sm mt-3">
+                        @forelse ($statusData as $row)
+                            <tr>
+                                <td>{{ $row['label'] }}</td>
+                                <td class="text-right"><strong>{{ $row['count'] }}</strong></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">No status data yet.</td>
+                            </tr>
+                        @endforelse
                     </table>
                 </div>
             </div>
@@ -65,48 +71,47 @@
 
         <div class="col-lg-6">
             <div class="card">
-                <div class="card-header"><h3 class="card-title">Monthly Requests</h3></div>
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> Monthly Requests</h3>
+                </div>
                 <div class="card-body">
-                    <canvas id="municipality-monthly-chart" height="180"></canvas>
-                    <table class="table table-sm mt-3 mb-0">
-                        <tbody>
-                            @foreach ($monthlyData as $row)
-                                <tr>
-                                    <th>{{ $row['label'] }}</th>
-                                    <td>{{ $row['count'] }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
+                    <canvas id="municipality-monthly-chart" height="200"></canvas>
+                    <table class="table table-bordered table-sm mt-3">
+                        @forelse ($monthlyData as $row)
+                            <tr>
+                                <td>{{ $row['label'] }}</td>
+                                <td class="text-right"><strong>{{ $row['count'] }}</strong></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">No monthly data yet.</td>
+                            </tr>
+                        @endforelse
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
+    {{-- Data Tables Row --}}
     <div class="row">
         <div class="col-lg-6">
             <div class="card">
-                <div class="card-header"><h3 class="card-title">Requests by Service</h3></div>
-                <div class="card-body table-responsive p-0">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-concierge-bell mr-1"></i> Requests by Service</h3>
+                </div>
+                <div class="card-body p-0">
                     <table class="table table-bordered table-striped mb-0">
-                        <thead>
+                        @forelse ($serviceData as $row)
                             <tr>
-                                <th>Service</th>
-                                <th>Requests</th>
+                                <td>{{ $row['label'] }}</td>
+                                <td class="text-right"><strong>{{ $row['count'] }}</strong></td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($serviceData as $row)
-                                <tr>
-                                    <td>{{ $row['label'] }}</td>
-                                    <td>{{ $row['count'] }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center">No service data yet.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
+                        @empty
+                            <tr>
+                                <td colspan="2" class="text-center text-muted py-3">No service data yet.</td>
+                            </tr>
+                        @endforelse
                     </table>
                 </div>
             </div>
@@ -114,27 +119,21 @@
 
         <div class="col-lg-6">
             <div class="card">
-                <div class="card-header"><h3 class="card-title">Requests by Category</h3></div>
-                <div class="card-body table-responsive p-0">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-list mr-1"></i> Requests by Category</h3>
+                </div>
+                <div class="card-body p-0">
                     <table class="table table-bordered table-striped mb-0">
-                        <thead>
+                        @forelse ($categoryData as $row)
                             <tr>
-                                <th>Category</th>
-                                <th>Requests</th>
+                                <td>{{ $row['label'] }}</td>
+                                <td class="text-right"><strong>{{ $row['count'] }}</strong></td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($categoryData as $row)
-                                <tr>
-                                    <td>{{ $row['label'] }}</td>
-                                    <td>{{ $row['count'] }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center">No category data yet.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
+                        @empty
+                            <tr>
+                                <td colspan="2" class="text-center text-muted py-3">No category data yet.</td>
+                            </tr>
+                        @endforelse
                     </table>
                 </div>
             </div>
@@ -151,8 +150,14 @@
                 labels: @json($statusData->pluck('label')->values()),
                 datasets: [{
                     data: @json($statusData->pluck('count')->values()),
-                    backgroundColor: ['#17a2b8', '#007bff', '#ffc107', '#28a745', '#6c757d', '#dc3545']
+                    backgroundColor: ['#4299e1', '#2b6cb0', '#ecc94b', '#48bb78', '#a0aec0', '#fc8181']
                 }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true } }
+                }
             }
         });
 
@@ -163,9 +168,18 @@
                 datasets: [{
                     label: 'Requests',
                     data: @json($monthlyData->pluck('count')->values()),
-                    borderColor: '#007bff',
-                    fill: false
+                    borderColor: '#2b6cb0',
+                    backgroundColor: 'rgba(43, 108, 176, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#2b6cb0',
+                    pointRadius: 4,
                 }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
     </script>

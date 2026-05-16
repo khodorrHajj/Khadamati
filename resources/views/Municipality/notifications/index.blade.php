@@ -6,7 +6,7 @@
 @section('content')
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Workflow Notifications</h3>
+            <h3 class="card-title"><i class="fas fa-bell mr-1"></i> Workflow Notifications</h3>
         </div>
         <div class="card-body p-0">
             <div class="list-group list-group-flush">
@@ -38,7 +38,10 @@
                         </div>
                     </div>
                 @empty
-                    <div class="list-group-item text-muted">No notifications yet.</div>
+                    <div class="list-group-item text-muted text-center py-4">
+                        <i class="fas fa-bell-slash fa-2x mb-2 d-block"></i>
+                        No notifications yet.
+                    </div>
                 @endforelse
             </div>
         </div>

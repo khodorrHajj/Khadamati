@@ -21,10 +21,11 @@
     @endif
 
     <div class="row">
+        {{-- Create Service --}}
         <div class="col-lg-4">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Create Service</h3>
+                    <h3 class="card-title"><i class="fas fa-plus-circle mr-1"></i> Create Service</h3>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('municipality.services.store') }}">
@@ -47,7 +48,7 @@
 
                         <div class="form-group">
                             <label>Service Name</label>
-                            <input type="text" name="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror">
+                            <input type="text" name="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror" placeholder="e.g. Birth Certificate">
                             @error('name')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
@@ -55,7 +56,7 @@
 
                         <div class="form-group">
                             <label>Description</label>
-                            <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="3">{{ old('description') }}</textarea>
+                            <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="3" placeholder="Describe this service...">{{ old('description') }}</textarea>
                             @error('description')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
@@ -72,7 +73,7 @@
                             </div>
 
                             <div class="form-group col-md-6">
-                                <label>Expected Duration From (Days)</label>
+                                <label>Duration From (Days)</label>
                                 <input type="number" min="1" name="duration_days" value="{{ old('duration_days') }}" class="form-control @error('duration_days') is-invalid @enderror" placeholder="3">
                                 @error('duration_days')
                                     <span class="invalid-feedback d-block">{{ $message }}</span>
@@ -81,9 +82,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Expected Duration To (Days)</label>
+                            <label>Duration To (Days)</label>
                             <input type="number" min="{{ old('duration_days', 1) }}" name="duration_days_max" value="{{ old('duration_days_max', old('duration_days')) }}" class="form-control @error('duration_days_max') is-invalid @enderror" placeholder="7">
-                            <small class="form-text text-muted">Citizens will see this as an expected range, not a guaranteed exact date.</small>
+                            <small class="form-text text-muted">Citizens will see this as an expected range.</small>
                             @error('duration_days_max')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
@@ -117,10 +118,11 @@
             </div>
         </div>
 
+        {{-- Services List --}}
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Services for {{ $office->name }}</h3>
+                    <h3 class="card-title"><i class="fas fa-concierge-bell mr-1"></i> Services for {{ $office->name }}</h3>
                 </div>
                 <div class="card-body border-bottom">
                     <form method="GET" action="{{ route('municipality.services') }}">
@@ -128,12 +130,7 @@
                             <div class="col-md-5">
                                 <div class="form-group mb-md-0">
                                     <label class="sr-only">Search</label>
-                                    <input
-                                        type="text"
-                                        name="search"
-                                        value="{{ old('search', $search) }}"
-                                        class="form-control"
-                                        placeholder="Search by service name">
+                                    <input type="text" name="search" value="{{ old('search', $search) }}" class="form-control" placeholder="Search by service name">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -230,7 +227,10 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center">No services found.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="fas fa-concierge-bell fa-2x mb-2 d-block"></i>
+                                        No services found.
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>

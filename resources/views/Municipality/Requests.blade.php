@@ -14,9 +14,9 @@
 
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Requests for {{ $office->name }}</h3>
+            <h3 class="card-title"><i class="fas fa-filter mr-1"></i> Filters</h3>
         </div>
-        <div class="card-body border-bottom">
+        <div class="card-body">
             <form method="GET" action="{{ route('municipality.requests.index') }}">
                 <div class="row">
                     <div class="col-md-3">
@@ -73,17 +73,9 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Citizen Search</label>
-                            <input
-                                type="text"
-                                name="search"
-                                value="{{ old('search', $filters['search']) }}"
-                                class="form-control"
-                                placeholder="Name or email">
+                            <input type="text" name="search" value="{{ old('search', $filters['search']) }}" class="form-control" placeholder="Name or email">
                         </div>
                     </div>
-                </div>
-
-                <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>From Date</label>
@@ -96,8 +88,8 @@
                             <input type="date" name="date_to" value="{{ $filters['date_to'] }}" class="form-control">
                         </div>
                     </div>
-                    <div class="col-md-6 d-flex align-items-end">
-                        <div class="btn-group mb-3">
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="btn-group mb-3 w-100">
                             <button type="submit" class="btn btn-primary">Apply Filters</button>
                             @if ($filters['status'] || $filters['service'] || $filters['category'] || $filters['date_from'] || $filters['date_to'] || $filters['search'] || (($filters['handoff_scope'] ?? 'all') !== 'all'))
                                 <a href="{{ route('municipality.requests.index') }}" class="btn btn-secondary">Clear</a>
@@ -106,6 +98,12 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-file-alt mr-1"></i> Requests for {{ $office->name }}</h3>
         </div>
         <div class="card-body table-responsive p-0">
             <table class="table table-bordered table-striped mb-0">
@@ -163,7 +161,10 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center">No requests found.</td>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                No requests found.
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

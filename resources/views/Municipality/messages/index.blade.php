@@ -6,7 +6,7 @@
 @section('content')
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">{{ $office->name }} Conversations</h3>
+            <h3 class="card-title"><i class="fas fa-comments mr-1"></i> {{ $office->name }} Conversations</h3>
         </div>
         <div class="card-body table-responsive p-0">
             <table class="table table-hover text-nowrap mb-0">
@@ -51,7 +51,10 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted py-4">No request conversations yet.</td>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-comment-slash fa-2x mb-2 d-block"></i>
+                                No request conversations yet.
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

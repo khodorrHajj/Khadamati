@@ -5,7 +5,10 @@
 
 @section('content')
     @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
     @endif
 
     @if ($errors->any())
@@ -19,26 +22,23 @@
     @if ($serviceRequest->needsCitizenDocuments())
         <div class="alert alert-warning">
             <h5 class="mb-2"><i class="fas fa-file-upload mr-1"></i> Waiting For Citizen Documents</h5>
-            <p class="mb-0">
-                This request is paused until the citizen uploads the requested files. Your latest note is shown to the citizen as the missing-documents explanation.
-            </p>
+            <p class="mb-0">This request is paused until the citizen uploads the requested files. Your latest note is shown to the citizen as the missing-documents explanation.</p>
         </div>
     @elseif ($serviceRequest->isOverdue())
         <div class="alert alert-danger">
             <h5 class="mb-2"><i class="fas fa-exclamation-circle mr-1"></i> Request Overdue</h5>
-            <p class="mb-0">
-                Expected by {{ optional($serviceRequest->dueAt())->format('Y-m-d H:i') ?: '-' }}.
-                This request is overdue by {{ $serviceRequest->overdueDays() }} day{{ $serviceRequest->overdueDays() === 1 ? '' : 's' }}.
-            </p>
+            <p class="mb-0">Expected by {{ optional($serviceRequest->dueAt())->format('Y-m-d H:i') ?: '-' }}. This request is overdue by {{ $serviceRequest->overdueDays() }} day{{ $serviceRequest->overdueDays() === 1 ? '' : 's' }}.</p>
         </div>
     @endif
 
     <div class="row">
+        {{-- Main Content --}}
         <div class="col-lg-8">
+            {{-- Request Info --}}
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Request #{{ $serviceRequest->id }}</h3>
-                    <div class="d-flex align-items-center">
+                    <div>
                         <a href="{{ route('municipality.requests.receipt.download', $serviceRequest) }}" class="btn btn-outline-primary btn-sm mr-2">
                             <i class="fas fa-file-pdf"></i> Receipt PDF
                         </a>
@@ -138,100 +138,106 @@
                             </table>
                         </div>
                     </div>
-
-                    <div class="card mt-3">
-                        <div class="card-header">
-                            <h3 class="card-title">Citizen Uploaded Documents</h3>
-                        </div>
-                        <div class="card-body table-responsive p-0">
-                            <table class="table table-hover text-nowrap mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Document</th>
-                                        <th>Type</th>
-                                        <th>Uploaded</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($serviceRequest->requestDocuments as $document)
-                                        <tr>
-                                            <td>{{ $document->original_name ?: basename($document->document_path) }}</td>
-                                            <td>{{ $document->document_type ?: 'Submitted document' }}</td>
-                                            <td>{{ optional($document->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
-                                            <td>
-                                                <a href="{{ route('municipality.requests.documents.download', [$serviceRequest, $document]) }}" class="btn btn-primary btn-sm">
-                                                    <i class="fas fa-download"></i> Download
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">No submitted documents.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="card mt-3">
-                        <div class="card-header">
-                            <h3 class="card-title">Official Response Documents</h3>
-                        </div>
-                        <div class="card-body table-responsive p-0">
-                            <table class="table table-hover text-nowrap mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Document</th>
-                                        <th>Type</th>
-                                        <th>Uploaded By</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if ($serviceRequest->official_response_path)
-                                        <tr>
-                                            <td>{{ $serviceRequest->official_response_original_name ?: basename($serviceRequest->official_response_path) }}</td>
-                                            <td>{{ $serviceRequest->official_response_document_type ?: 'Official Response' }}</td>
-                                            <td>{{ $serviceRequest->officialResponseUploader?->name ?? 'Municipality user' }}</td>
-                                            <td>
-                                                <a href="{{ route('municipality.requests.official-response.download', $serviceRequest) }}" class="btn btn-primary btn-sm">
-                                                    <i class="fas fa-download"></i> Download
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @else
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">No official response document uploaded yet.</td>
-                                        </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="card mt-3">
-                        <div class="card-header">
-                            <h3 class="card-title">Notes</h3>
-                        </div>
-                        <div class="card-body">
-                            {!! nl2br(e($serviceRequest->notes ?: 'No notes added yet.')) !!}
-                        </div>
-                    </div>
-
-                    @include('shared.request-timeline', [
-                        'entries' => $serviceRequest->timelineForDisplay(),
-                        'title' => 'Request History',
-                    ])
                 </div>
             </div>
-        </div>
 
-        <div class="col-lg-4">
+            {{-- Citizen Documents --}}
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Update Request</h3>
+                    <h3 class="card-title"><i class="fas fa-file-upload mr-1"></i> Citizen Uploaded Documents</h3>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-bordered table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Document</th>
+                                <th>Type</th>
+                                <th>Uploaded</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($serviceRequest->requestDocuments as $document)
+                                <tr>
+                                    <td>{{ $document->original_name ?: basename($document->document_path) }}</td>
+                                    <td>{{ $document->document_type ?: 'Submitted document' }}</td>
+                                    <td>{{ optional($document->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
+                                    <td>
+                                        <a href="{{ route('municipality.requests.documents.download', [$serviceRequest, $document]) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No submitted documents.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- Official Response Document --}}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-stamp mr-1"></i> Official Response Document</h3>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-bordered table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Document</th>
+                                <th>Type</th>
+                                <th>Uploaded By</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if ($serviceRequest->official_response_path)
+                                <tr>
+                                    <td>{{ $serviceRequest->official_response_original_name ?: basename($serviceRequest->official_response_path) }}</td>
+                                    <td>{{ $serviceRequest->official_response_document_type ?: 'Official Response' }}</td>
+                                    <td>{{ $serviceRequest->officialResponseUploader?->name ?? 'Municipality user' }}</td>
+                                    <td>
+                                        <a href="{{ route('municipality.requests.official-response.download', $serviceRequest) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </td>
+                                </tr>
+                            @else
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No official response document uploaded yet.</td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- Notes --}}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-sticky-note mr-1"></i> Notes</h3>
+                </div>
+                <div class="card-body">
+                    {!! nl2br(e($serviceRequest->notes ?: 'No notes added yet.')) !!}
+                </div>
+            </div>
+
+            {{-- Timeline --}}
+            @include('shared.request-timeline', [
+                'entries' => $serviceRequest->timelineForDisplay(),
+                'title' => 'Request History',
+            ])
+        </div>
+
+        {{-- Sidebar --}}
+        <div class="col-lg-4">
+            {{-- Update Request --}}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-edit mr-1"></i> Update Request</h3>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('municipality.requests.update', $serviceRequest) }}" enctype="multipart/form-data">
@@ -337,9 +343,10 @@
                 </div>
             </div>
 
+            {{-- Conversation --}}
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Conversation</h3>
+                    <h3 class="card-title"><i class="fas fa-comments mr-1"></i> Conversation</h3>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Open the dedicated chat screen to follow the citizen conversation in a cleaner layout.</p>
@@ -349,9 +356,10 @@
                 </div>
             </div>
 
+            {{-- Appointment --}}
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Appointment</h3>
+                    <h3 class="card-title"><i class="fas fa-calendar-alt mr-1"></i> Appointment</h3>
                 </div>
                 <div class="card-body">
                     @if ($currentAppointment)
@@ -422,5 +430,4 @@
             </div>
         </div>
     </div>
-
 @endsection
