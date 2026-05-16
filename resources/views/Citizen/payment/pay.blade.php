@@ -1,7 +1,7 @@
 @extends('layouts.citizen')
 
-@section('title', 'Pay with Cryptocurrency')
-@section('page-title', 'Pay with Cryptocurrency')
+@section('title', 'Pay with Card')
+@section('page-title', 'Pay with Card')
 
 @section('content')
     @if ($errors->any())
@@ -65,20 +65,20 @@
                             </tr>
                             <tr>
                                 <th>Payment Method</th>
-                                <td>Cryptocurrency (via NOWPayments)</td>
+                                <td>Credit / Debit Card (via Stripe)</td>
                             </tr>
                         </tbody>
                     </table>
 
                     <p class="text-muted small mb-4">
-                        You will be redirected to NOWPayments to complete your payment in your preferred cryptocurrency.
+                        You will be redirected to Stripe to complete your payment securely.
                         Once your payment is confirmed, your service request will be created automatically.
                     </p>
 
                     <form method="POST" action="{{ route('citizen.payment.create', $service) }}">
                         @csrf
                         <button type="submit" class="btn btn-success btn-block">
-                            Proceed to Crypto Payment
+                            Proceed to Secure Payment
                         </button>
                     </form>
 

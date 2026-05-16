@@ -74,10 +74,17 @@
                     <h3 class="card-title">Start Request</h3>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Review the required documents and add your notes before submitting this request.</p>
-                    <a href="{{ route('citizen.services.request.create', $service) }}" class="btn btn-primary btn-block">
-                        Start Request
-                    </a>
+                    @if ((float) $service->price > 0)
+                        <p class="text-muted">This service requires payment. You will be redirected to Stripe to pay securely. Your request will be created automatically once payment is confirmed.</p>
+                        <a href="{{ route('citizen.payment.show', $service) }}" class="btn btn-success btn-block">
+                            Pay & Submit Request
+                        </a>
+                    @else
+                        <p class="text-muted">Review the required documents and add your notes before submitting this request.</p>
+                        <a href="{{ route('citizen.services.request.create', $service) }}" class="btn btn-primary btn-block">
+                            Start Request
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

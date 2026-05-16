@@ -4,24 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class CryptoPayment extends Model
+class StripePayment extends Model
 {
     protected $fillable = [
         'user_id',
         'service_id',
         'service_request_id',
-        'nowpayments_payment_id',
-        'nowpayments_invoice_id',
+        'stripe_session_id',
+        'stripe_payment_intent_id',
         'price_amount',
         'status',
         'payment_url',
-        'payin_address',
-        'actually_paid',
     ];
 
     protected $casts = [
-        'price_amount'  => 'decimal:2',
-        'actually_paid' => 'decimal:8',
+        'price_amount' => 'decimal:2',
     ];
 
     public function user()
