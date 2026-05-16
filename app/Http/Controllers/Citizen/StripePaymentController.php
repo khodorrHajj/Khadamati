@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Services\CitizenServiceRequestService;
 use App\Services\StripePaymentService;
+use App\Support\LebaneseCurrency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,7 +25,10 @@ class StripePaymentController extends Controller
 
         $service->load(['governmentOffice.municipality', 'serviceCategory']);
 
-        return view('Citizen.payment.pay', compact('service'));
+        $priceUsd    = LebaneseCurrency::toUsd((float) $service->price);
+        $exchangeRate = LebaneseCurrency::getRate();
+
+        return view('Citizen.payment.pay', compact('service', 'priceUsd', 'exchangeRate'));
     }
 
     public function create(Request $request, Service $service, StripePaymentService $stripePaymentService)

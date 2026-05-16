@@ -60,8 +60,16 @@
                     <table class="table table-bordered mb-4">
                         <tbody>
                             <tr>
-                                <th style="width: 140px;">Amount Due</th>
-                                <td class="font-weight-bold">${{ number_format((float) $service->price, 2) }} USD</td>
+                                <th style="width: 140px;">Amount (LBP)</th>
+                                <td class="font-weight-bold">{{ $service->formattedPrice() }}</td>
+                            </tr>
+                            <tr>
+                                <th>Amount (USD)</th>
+                                <td class="font-weight-bold">${{ number_format($priceUsd, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <th>Exchange Rate</th>
+                                <td class="text-muted">1 USD = {{ number_format($exchangeRate, 0) }} LBP</td>
                             </tr>
                             <tr>
                                 <th>Payment Method</th>
