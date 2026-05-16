@@ -40,9 +40,9 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('citizen.dashboard') }}#payments" class="nav-link">
+                    <a href="{{ route('citizen.payment.history') }}" class="nav-link {{ request()->routeIs('citizen.payment.history') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-credit-card"></i>
-                        <p>Payments</p>
+                        <p>My Payments</p>
                     </a>
                 </li>
                 <li class="nav-item">

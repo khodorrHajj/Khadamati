@@ -5,6 +5,7 @@ use App\Http\Controllers\Citizen\StripePaymentController;
 use App\Http\Controllers\Citizen\DashboardController;
 use App\Http\Controllers\Citizen\FeedbackController;
 use App\Http\Controllers\Citizen\NotificationController;
+use App\Http\Controllers\Citizen\PaymentHistoryController;
 use App\Http\Controllers\Citizen\RequestMessageController;
 use App\Http\Controllers\Citizen\ServiceCatalogController;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,7 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
         Route::post('/services/{service}/pay', [StripePaymentController::class, 'create'])->name('payment.create');
         Route::get('/payment/success',         [StripePaymentController::class, 'success'])->name('payment.success');
         Route::get('/payment/cancelled',       [StripePaymentController::class, 'cancelled'])->name('payment.cancelled');
+        Route::get('/payment/history',         [PaymentHistoryController::class, 'index'])->name('payment.history');
 
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
