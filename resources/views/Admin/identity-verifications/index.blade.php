@@ -24,7 +24,7 @@
             <form method="GET" action="{{ route('admin.identity-verifications.index') }}">
                 <div class="form-row">
                     <div class="col-md-6 mb-2">
-                        <input type="text" name="search" value="{{ old('search', $search) }}" class="form-control" placeholder="Search by citizen, email, extracted name, or ID number">
+                        <input type="text" name="search" value="{{ old('search', $search) }}" class="form-control" placeholder="Search by citizen, email, first name, or family name">
                     </div>
                     <div class="col-md-3 mb-2">
                         <select name="status" class="custom-select">
@@ -53,8 +53,8 @@
                         <th>Citizen</th>
                         <th>Email</th>
                         <th>Status</th>
-                        <th>Extracted Name</th>
-                        <th>ID Number</th>
+                        <th>First Name</th>
+                        <th>Family Name</th>
                         <th>Submitted</th>
                         <th>Actions</th>
                     </tr>
@@ -70,8 +70,8 @@
                                     {{ ucwords(str_replace('_', ' ', $verification->status)) }}
                                 </span>
                             </td>
-                            <td>{{ $verification->extracted_full_name ?: '-' }}</td>
-                            <td>{{ $verification->extracted_id_number ?: '-' }}</td>
+                            <td>{{ $verification->extracted_first_name ?: '-' }}</td>
+                            <td>{{ $verification->extracted_family_name ?: '-' }}</td>
                             <td>{{ optional($verification->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
                             <td>
                                 <a href="{{ route('admin.identity-verifications.show', $verification) }}" class="btn btn-info btn-sm">Review</a>

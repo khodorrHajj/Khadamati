@@ -7,6 +7,8 @@ use App\Models\IdentityVerification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
 
 class IdentityVerificationController extends Controller
@@ -28,7 +30,8 @@ class IdentityVerificationController extends Controller
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($verificationQuery) use ($search) {
                     $verificationQuery->where('extracted_full_name', 'like', "%{$search}%")
-                        ->orWhere('extracted_id_number', 'like', "%{$search}%")
+                        ->orWhere('extracted_first_name', 'like', "%{$search}%")
+                        ->orWhere('extracted_family_name', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($userQuery) use ($search) {
                             $userQuery->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
@@ -47,8 +50,17 @@ class IdentityVerificationController extends Controller
     public function show(IdentityVerification $verification): View
     {
         $verification->load('user.role', 'reviewer');
+        $imageExists = $verification->id_image_path
+            && Storage::disk('public')->exists($verification->id_image_path);
 
-        return view('Admin.identity-verifications.show', compact('verification'));
+        return view('Admin.identity-verifications.show', compact('verification', 'imageExists'));
+    }
+
+    public function image(IdentityVerification $verification): StreamedResponse
+    {
+        abort_if(!$verification->id_image_path || !Storage::disk('public')->exists($verification->id_image_path), 404, 'The uploaded ID image could not be found.');
+
+        return Storage::disk('public')->response($verification->id_image_path);
     }
 
     public function approve(IdentityVerification $verification): RedirectResponse

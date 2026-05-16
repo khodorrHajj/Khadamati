@@ -52,6 +52,7 @@ Route::middleware(['checkIfConnected', 'checkRole:admin'])
 
         // Identity Verifications
         Route::get('/identity-verifications', [IdentityVerificationController::class, 'index'])->name('identity-verifications.index');
+        Route::get('/identity-verifications/{verification}/image', [IdentityVerificationController::class, 'image'])->name('identity-verifications.image');
         Route::get('/identity-verifications/{verification}', [IdentityVerificationController::class, 'show'])->name('identity-verifications.show');
         Route::patch('/identity-verifications/{verification}/approve', [IdentityVerificationController::class, 'approve'])->name('identity-verifications.approve');
         Route::patch('/identity-verifications/{verification}/reject', [IdentityVerificationController::class, 'reject'])->name('identity-verifications.reject');

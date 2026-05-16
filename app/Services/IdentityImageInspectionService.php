@@ -64,27 +64,20 @@ class IdentityImageInspectionService
 
     public function validateLebaneseIdFields(array $fields): array
     {
-        $warnings = [];
         $errors = [];
 
-        if (blank($fields['full_name'] ?? null)) {
-            $errors[] = 'Full name was not detected.';
+        if (blank($fields['first_name'] ?? null)) {
+            $errors[] = 'Name was not detected.';
         }
 
-        if (blank($fields['id_number'] ?? null)) {
-            $errors[] = 'ID number was not detected.';
-        } elseif (!preg_match('/^[A-Z0-9\-]{5,20}$/', $fields['id_number'])) {
-            $warnings[] = 'Detected ID number format needs manual review.';
-        }
-
-        if (blank($fields['date_of_birth'] ?? null)) {
-            $warnings[] = 'Date of birth was not detected.';
+        if (blank($fields['family_name'] ?? null)) {
+            $errors[] = 'Family name was not detected.';
         }
 
         return [
             'passed' => empty($errors),
             'errors' => $errors,
-            'warnings' => $warnings,
+            'warnings' => [],
         ];
     }
 }

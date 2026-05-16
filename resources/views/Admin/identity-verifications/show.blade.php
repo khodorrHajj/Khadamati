@@ -4,6 +4,16 @@
 @section('page-title', 'Review ID Verification')
 
 @section('content')
+    @php
+        $rawOcrText = $verification->ocr_raw_text
+            ?? data_get($verification->ocr_raw_json, 'text')
+            ?? data_get($verification->ocr_raw_json, 'response.responses.0.fullTextAnnotation.text')
+            ?? '';
+        $ocrDiagnostics = data_get($verification->ocr_raw_json, 'diagnostics', []);
+        $ocrContext = data_get($verification->ocr_raw_json, 'context', []);
+        $fileDiagnostics = data_get($ocrContext, 'file', []);
+    @endphp
+
     @if (session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
@@ -26,8 +36,17 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    @if ($verification->id_image_url)
-                        <img src="{{ $verification->id_image_url }}" alt="Submitted ID" class="img-fluid border rounded">
+                    @if ($imageExists)
+                        <img src="{{ route('admin.identity-verifications.image', $verification) }}" alt="Submitted ID" class="img-fluid border rounded">
+                        <div class="mt-2">
+                            <a href="{{ route('admin.identity-verifications.image', $verification) }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+                                Open Image
+                            </a>
+                        </div>
+                    @elseif ($verification->id_image_path)
+                        <div class="alert alert-warning mb-0">
+                            The uploaded ID image could not be found. Stored path: <code>{{ $verification->id_image_path }}</code>
+                        </div>
                     @else
                         <p class="text-muted mb-0">No ID image uploaded.</p>
                     @endif
@@ -48,11 +67,69 @@
                         <div class="alert alert-warning mb-2">{{ $warning }}</div>
                     @endforeach
 
+                    @if ($rawOcrText === '')
+                        <div class="alert alert-warning mb-2">No text was detected. Try a clearer image or approve manually.</div>
+                    @endif
+
                     @if (!array_merge($qualityWarnings, $exifWarnings, $validationWarnings, $validationErrors))
                         <p class="text-muted mb-0">No warnings recorded.</p>
                     @endif
                 </div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Raw OCR Text</h3>
+                </div>
+                <div class="card-body">
+                    <details>
+                        <summary>Show raw OCR text</summary>
+                        <pre class="mt-3 p-3 bg-light border rounded" style="white-space: pre-wrap;">{{ $rawOcrText ?: 'No raw OCR text recorded.' }}</pre>
+                    </details>
+                </div>
+            </div>
+
+            @if (app()->environment('local'))
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">OCR Diagnostics</h3>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <tbody>
+                                <tr>
+                                    <th>Stored Path</th>
+                                    <td><code>{{ $fileDiagnostics['stored_path'] ?? $verification->id_image_path ?? '-' }}</code></td>
+                                </tr>
+                                <tr>
+                                    <th>Physical Path</th>
+                                    <td><code>{{ $fileDiagnostics['absolute_path'] ?? '-' }}</code></td>
+                                </tr>
+                                <tr>
+                                    <th>File Exists / Readable</th>
+                                    <td>{{ ($fileDiagnostics['exists'] ?? false) ? 'Yes' : 'No' }} / {{ ($fileDiagnostics['readable'] ?? false) ? 'Yes' : 'No' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>File Size / MIME</th>
+                                    <td>{{ $fileDiagnostics['size'] ?? '-' }} bytes / {{ $fileDiagnostics['mime_type'] ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Raw Text Length</th>
+                                    <td>{{ strlen($rawOcrText) }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Annotations Count</th>
+                                    <td>{{ $ocrDiagnostics['text_annotations_count'] ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>OCR Attempt</th>
+                                    <td>{{ $ocrDiagnostics['attempt'] ?? '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div class="col-lg-5">
@@ -76,16 +153,16 @@
                                 <td>{{ ucwords(str_replace('_', ' ', $verification->status)) }}</td>
                             </tr>
                             <tr>
-                                <th>Extracted Name</th>
+                                <th>First Name / الاسم</th>
+                                <td>{{ $verification->extracted_first_name ?: '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Family Name / الشهرة</th>
+                                <td>{{ $verification->extracted_family_name ?: '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Matched Name</th>
                                 <td>{{ $verification->extracted_full_name ?: '-' }}</td>
-                            </tr>
-                            <tr>
-                                <th>ID Number</th>
-                                <td>{{ $verification->extracted_id_number ?: '-' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Date of Birth</th>
-                                <td>{{ optional($verification->extracted_date_of_birth)->format('Y-m-d') ?: '-' }}</td>
                             </tr>
                             <tr>
                                 <th>OCR Confidence</th>
@@ -132,3 +209,11 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    @if (app()->environment('local'))
+        <script>
+            console.log('OCR raw text:', @json($rawOcrText));
+        </script>
+    @endif
+@endpush
