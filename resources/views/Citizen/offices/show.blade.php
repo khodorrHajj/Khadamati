@@ -158,6 +158,45 @@
         </div>
     </div>
 
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Book an Appointment</h3>
+        </div>
+        <div class="card-body">
+            @if ($upcomingSlots->isNotEmpty())
+                <p class="mb-3">The following appointment slots are currently open at this office. To book one, start a service request first.</p>
+                <table class="table table-sm table-bordered mb-3">
+                    <thead>
+                        <tr>
+                            <th>Date &amp; Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($upcomingSlots as $slot)
+                            <tr>
+                                <td>{{ $slot->starts_at->format('D, d M Y — H:i') }}</td>
+                                <td>until {{ $slot->ends_at->format('H:i') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                <a href="{{ route('citizen.services.index', ['office' => $office->id]) }}" class="btn btn-primary">
+                    <i class="fas fa-calendar-plus mr-1"></i> Start a Request to Book
+                </a>
+            @else
+                <p class="text-muted mb-2">No appointment slots are currently open for this office.</p>
+                <p class="text-muted mb-3">Check back later or contact the office directly to arrange a visit.</p>
+                @if ($office->phone || $office->contact_info)
+                    <p class="mb-0"><strong>Phone:</strong> {{ $office->phone ?: $office->contact_info }}</p>
+                @endif
+                @if ($office->email)
+                    <p class="mb-0"><strong>Email:</strong> <a href="mailto:{{ $office->email }}">{{ $office->email }}</a></p>
+                @endif
+            @endif
+        </div>
+    </div>
+
     @if ($categories->isNotEmpty())
         <div class="alert alert-light border">
             {{ $categories->count() }} service categor{{ $categories->count() === 1 ? 'y is' : 'ies are' }} available in this office.

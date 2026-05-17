@@ -41,11 +41,8 @@ class DashboardController extends Controller
             })
             ->count();
 
-        $pendingPayments = (clone $requestsQuery)
-            ->where('status', ServiceRequest::STATUS_APPROVED)
-            ->whereHas('service', function ($query) {
-                $query->where('price', '>', 0);
-            })
+        $actionRequired = (clone $requestsQuery)
+            ->where('status', ServiceRequest::STATUS_MISSING_DOCUMENTS)
             ->count();
 
         $recentRequests = (clone $requestsQuery)
@@ -55,8 +52,8 @@ class DashboardController extends Controller
             ->get();
 
         return view('Citizen.Dashboard', compact(
+            'actionRequired',
             'completedRequests',
-            'pendingPayments',
             'pendingRequests',
             'recentRequests',
             'totalRequests',
