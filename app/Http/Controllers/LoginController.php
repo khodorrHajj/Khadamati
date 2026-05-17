@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessPendingNationalIdJob;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\IdentityVerification;
-use App\Models\NationalId;
-use App\Models\PendingRegistration;
-use App\Services\IdentityOcrService;
-use App\Services\LebaneseNationalIdParser;
+use App\Services\PendingNationalIdService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Laravel\Socialite\Socialite;
 use Throwable;
@@ -25,7 +23,7 @@ class LoginController extends Controller
         return view('Authentication.Signup');
     }
 
-    public function register(Request $request, IdentityOcrService $ocrService, LebaneseNationalIdParser $parser)
+    public function register(Request $request, PendingNationalIdService $pendingNationalIdService)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -38,7 +36,8 @@ class LoginController extends Controller
             ],
             'phone' => ['nullable', 'string', 'max:50'],
             'password' => ['required', 'confirmed', 'min:6'],
-            'id_image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'id_image_front' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'id_image_back' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         $citizenRole = Role::where('role', 'citizen')->first();
@@ -49,57 +48,31 @@ class LoginController extends Controller
             ]);
         }
 
-        $imagePath = $request->file('id_image')->store('identity-verifications', 'public');
-        $ocr = $ocrService->analyze($imagePath);
-        $rawText = $ocr['text'] ?? '';
-        $fields = $parser->parse($rawText);
-        $normalizedNationalId = $fields['national_id_number_normalized'] ?? null;
+        $frontImagePath = $request->file('id_image_front')->store('identity-verifications', 'public');
+        $backImagePath = $request->file('id_image_back')->store('identity-verifications', 'public');
 
-        if (
-            $normalizedNationalId
-            && NationalId::where('national_id_number_normalized', $normalizedNationalId)
-                ->whereIn('status', NationalId::statuses())
-                ->exists()
-        ) {
+        $duplicateNationalId = $pendingNationalIdService->findDuplicateFromFrontImage($frontImagePath);
+
+        if ($duplicateNationalId) {
+            Storage::disk('public')->delete([$frontImagePath, $backImagePath]);
+
             return redirect()->back()
-                ->withInput($request->except(['password', 'password_confirmation', 'id_image']))
+                ->withInput($request->except(['password', 'password_confirmation', 'id_image_front', 'id_image_back']))
                 ->withErrors([
-                    'id_image' => 'This national ID is already registered or pending review.',
+                    'id_image_front' => 'This national ID is already registered or pending review.',
                 ]);
         }
 
-        DB::transaction(function () use ($validated, $imagePath, $ocr, $rawText, $fields) {
-            $nationalId = NationalId::create([
-                'national_id_number' => $fields['national_id_number'] ?? null,
-                'national_id_number_normalized' => $fields['national_id_number_normalized'] ?? null,
-                'first_name_ar' => $fields['first_name_ar'] ?? null,
-                'family_name_ar' => $fields['family_name_ar'] ?? null,
-                'father_name_ar' => $fields['father_name_ar'] ?? null,
-                'mother_name_ar' => $fields['mother_name_ar'] ?? null,
-                'place_of_birth_ar' => $fields['place_of_birth_ar'] ?? null,
-                'date_of_birth_text' => $fields['date_of_birth_text'] ?? null,
-                'raw_ocr_text' => $rawText,
-                'id_image_path' => $imagePath,
-                'ocr_confidence' => $ocr['confidence'] ?? null,
-                'status' => NationalId::STATUS_PENDING_REVIEW,
-            ]);
+        $nationalId = $pendingNationalIdService->createFromSignup(
+            $validated,
+            $frontImagePath,
+            $backImagePath
+        );
 
-            $pendingRegistration = PendingRegistration::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'phone' => $validated['phone'] ?? null,
-                'password' => Hash::make($validated['password']),
-                'national_id_id' => $nationalId->id,
-                'status' => PendingRegistration::STATUS_PENDING_REVIEW,
-            ]);
-
-            $nationalId->update([
-                'pending_registration_id' => $pendingRegistration->id,
-            ]);
-        });
+        ProcessPendingNationalIdJob::dispatch($nationalId->id);
 
         return redirect()->route('login')
-            ->with('success', 'Your registration is pending admin ID verification.');
+            ->with('success', 'Your registration was submitted. ID OCR processing will continue in the background before admin review.');
     }
 
     public function login()

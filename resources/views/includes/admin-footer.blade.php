@@ -1,3 +1,3 @@
 <footer class="main-footer">
-    <strong>E-Services Admin</strong>
+    <strong>{{ config('app.name', 'Khadamati') }} Admin</strong>
 </footer>

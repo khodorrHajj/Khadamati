@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Jobs\ProcessIdentityVerificationJob;
 use App\Models\IdentityVerification;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
@@ -11,52 +13,103 @@ class IdentityVerificationService
 {
     public function __construct(
         private IdentityOcrService $ocrService,
-        private IdentityImageInspectionService $inspectionService
+        private IdentityImageInspectionService $inspectionService,
+        private LebaneseNationalIdParser $parser
     ) {
     }
 
-    public function submit(User $user, UploadedFile $file): IdentityVerification
+    public function submit(User $user, UploadedFile $frontFile, UploadedFile $backFile): IdentityVerification
     {
         $verification = IdentityVerification::create([
             'user_id' => $user->id,
             'status' => IdentityVerification::STATUS_PROCESSING,
-            'id_image_path' => $file->store('identity-verifications', 'public'),
+            'id_image_path' => $frontFile->store('identity-verifications', 'public'),
+            'id_image_back_path' => $backFile->store('identity-verifications', 'public'),
         ]);
 
+        ProcessIdentityVerificationJob::dispatch($verification->id);
+
+        return $verification->fresh();
+    }
+
+    public function process(IdentityVerification $verification): IdentityVerification
+    {
+        $verification->loadMissing('user');
+        $user = $verification->user;
+
+        if (!$user || $verification->status === IdentityVerification::STATUS_APPROVED) {
+            return $verification;
+        }
+
         try {
-            $quality = $this->inspectionService->quality($file);
-            $exif = $this->inspectionService->exif($file);
-            $ocr = $this->ocrService->analyze($verification->id_image_path);
-            $rawText = $ocr['text'] ?? '';
-            $fields = $this->extractNameFields($user, $rawText, $ocr['fields'] ?? []);
+            $quality = [
+                'front' => $this->inspectionService->qualityForStoredImage($verification->id_image_path),
+                'back' => $this->inspectionService->qualityForStoredImage($verification->id_image_back_path),
+            ];
+            $exif = [
+                'front' => $this->inspectionService->exifForStoredImage($verification->id_image_path),
+                'back' => $this->inspectionService->exifForStoredImage($verification->id_image_back_path),
+            ];
+            $frontOcr = $this->ocrService->analyze($verification->id_image_path);
+            $backOcr = $this->ocrService->analyze($verification->id_image_back_path);
+            $frontRawText = $frontOcr['text'] ?? '';
+            $backRawText = $backOcr['text'] ?? '';
+            $fields = $this->extractIdentityFields(
+                $user,
+                $frontRawText,
+                $backRawText,
+                $frontOcr['fields'] ?? []
+            );
             $validation = $this->inspectionService->validateLebaneseIdFields($fields);
 
-            if ($rawText === '') {
-                $validation['warnings'][] = 'No text was detected. Try a clearer image or approve manually.';
+            if ($frontRawText === '') {
+                $validation['warnings'][] = 'No text was detected on the front-side image. Try a clearer image or approve manually.';
             }
 
-            if ($this->containsArabicText($rawText)) {
+            if ($backRawText === '') {
+                $validation['warnings'][] = 'No text was detected on the back-side image. Try a clearer image or approve manually.';
+            }
+
+            if ($this->containsArabicText($frontRawText . "\n" . $backRawText)) {
                 $validation['warnings'][] = 'Arabic OCR text detected. Manual admin review required.';
             }
 
             Log::debug('Identity OCR raw text', [
                 'verification_id' => $verification->id,
-                'raw_text' => $rawText,
+                'front_raw_text' => $frontRawText,
+                'back_raw_text' => $backRawText,
             ]);
 
             $verification->update([
                 'status' => IdentityVerification::STATUS_NEEDS_REVIEW,
-                'extracted_first_name' => $fields['first_name'] ?? null,
-                'extracted_family_name' => $fields['family_name'] ?? null,
+                'extracted_first_name' => $fields['first_name_ar'] ?? null,
+                'extracted_family_name' => $fields['family_name_ar'] ?? null,
+                'extracted_father_name' => $fields['father_name_ar'] ?? null,
+                'extracted_mother_name' => $fields['mother_name_ar'] ?? null,
+                'extracted_mother_family_name' => $fields['mother_family_name_ar'] ?? null,
                 'extracted_full_name' => trim(implode(' ', array_filter([
-                    $fields['first_name'] ?? null,
-                    $fields['family_name'] ?? null,
+                    $fields['first_name_ar'] ?? null,
+                    $fields['family_name_ar'] ?? null,
                 ]))) ?: null,
-                'extracted_id_number' => null,
-                'extracted_date_of_birth' => null,
-                'ocr_confidence' => $this->confidenceFor($ocr, $rawText, $fields),
-                'ocr_raw_text' => $rawText,
-                'ocr_raw_json' => $ocr['raw'] ?? $ocr,
+                'extracted_place_of_birth' => $fields['place_of_birth_ar'] ?? null,
+                'extracted_date_of_birth_text' => $fields['date_of_birth_text'] ?? null,
+                'extracted_id_number' => $fields['national_id_number_normalized'] ?? $fields['national_id_number'] ?? null,
+                'extracted_date_of_birth' => $this->dateForDatabase($fields['date_of_birth_text'] ?? null),
+                'extracted_gender' => $fields['gender_ar'] ?? null,
+                'extracted_marital_status' => $fields['marital_status_ar'] ?? null,
+                'extracted_record_number' => $fields['record_number'] ?? null,
+                'extracted_locality' => $fields['locality_ar'] ?? null,
+                'extracted_governorate' => $fields['governorate_ar'] ?? null,
+                'extracted_district' => $fields['district_ar'] ?? null,
+                'extracted_blood_type' => $fields['blood_type'] ?? null,
+                'extracted_issue_date_text' => $fields['issue_date_text'] ?? null,
+                'ocr_confidence' => $this->combinedConfidence([$frontOcr, $backOcr], $fields),
+                'ocr_raw_text' => $fields['raw_ocr_text'] ?? '',
+                'ocr_raw_json' => [
+                    'front' => $frontOcr,
+                    'back' => $backOcr,
+                    'parsed_fields' => $fields,
+                ],
                 'quality_result_json' => $quality,
                 'exif_result_json' => $exif,
                 'validation_result_json' => $validation,
@@ -75,30 +128,35 @@ class IdentityVerificationService
         return $verification->fresh();
     }
 
-    private function extractNameFields(User $user, string $rawText, array $ocrFields = []): array
+    private function extractIdentityFields(User $user, string $frontRawText, string $backRawText, array $frontOcrFields = []): array
     {
-        if (filled($ocrFields['first_name'] ?? null) || filled($ocrFields['family_name'] ?? null)) {
-            return [
-                'first_name' => $ocrFields['first_name'] ?? null,
-                'family_name' => $ocrFields['family_name'] ?? null,
-            ];
+        $fields = $this->parser->parse($frontRawText, $backRawText);
+
+        if (blank($fields['first_name_ar'] ?? null) && filled($frontOcrFields['first_name'] ?? null)) {
+            $fields['first_name_ar'] = $frontOcrFields['first_name'];
         }
 
-        if ($this->containsArabicText($rawText)) {
-            return [
-                'first_name' => null,
-                'family_name' => null,
-            ];
+        if (blank($fields['family_name_ar'] ?? null) && filled($frontOcrFields['family_name'] ?? null)) {
+            $fields['family_name_ar'] = $frontOcrFields['family_name'];
+        }
+
+        if ($this->containsArabicText($frontRawText . "\n" . $backRawText)) {
+            return $fields;
         }
 
         $nameParts = preg_split('/\s+/', trim($user->name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $firstName = $nameParts[0] ?? null;
         $familyName = count($nameParts) > 1 ? $nameParts[count($nameParts) - 1] : null;
 
-        return [
-            'first_name' => $this->textContainsNamePart($rawText, $firstName) ? $firstName : null,
-            'family_name' => $this->textContainsNamePart($rawText, $familyName) ? $familyName : null,
-        ];
+        if (blank($fields['first_name_ar'] ?? null) && $this->textContainsNamePart($frontRawText, $firstName)) {
+            $fields['first_name_ar'] = $firstName;
+        }
+
+        if (blank($fields['family_name_ar'] ?? null) && $this->textContainsNamePart($frontRawText, $familyName)) {
+            $fields['family_name_ar'] = $familyName;
+        }
+
+        return $fields;
     }
 
     private function textContainsNamePart(string $rawText, ?string $namePart): bool
@@ -134,22 +192,58 @@ class IdentityVerificationService
         return (bool) preg_match('/\p{Arabic}/u', $value);
     }
 
-    private function confidenceFor(array $ocr, string $rawText, array $fields): float
+    private function combinedConfidence(array $ocrResults, array $fields): float
     {
-        $confidence = (float) ($ocr['confidence'] ?? 0);
+        $confidences = collect($ocrResults)
+            ->map(fn (array $result) => (float) ($result['confidence'] ?? 0))
+            ->filter(fn (float $confidence) => $confidence > 0)
+            ->values();
 
-        if ($confidence > 0) {
-            return $confidence;
+        if ($confidences->isNotEmpty()) {
+            return round((float) $confidences->avg(), 4);
         }
 
-        if (filled($fields['first_name'] ?? null) && filled($fields['family_name'] ?? null)) {
+        if (
+            filled($fields['first_name_ar'] ?? null)
+            && filled($fields['family_name_ar'] ?? null)
+            && filled($fields['national_id_number_normalized'] ?? null)
+        ) {
             return 0.75;
         }
 
-        if (filled($rawText)) {
+        if (filled($fields['raw_ocr_text'] ?? null)) {
             return 0.5;
         }
 
         return 0.0;
+    }
+
+    private function dateForDatabase(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (preg_match('/^(?<year>\d{4})[\/\-](?<month>\d{1,2})[\/\-](?<day>\d{1,2})$/', $value, $matches)) {
+            $year = (int) $matches['year'];
+            $month = (int) $matches['month'];
+            $day = (int) $matches['day'];
+        } elseif (preg_match('/^(?<day>\d{1,2})[\/\-](?<month>\d{1,2})[\/\-](?<year>\d{2,4})$/', $value, $matches)) {
+            $year = (int) $matches['year'];
+            if (strlen($matches['year']) === 2) {
+                $year += $year >= 50 ? 1900 : 2000;
+            }
+
+            $month = (int) $matches['month'];
+            $day = (int) $matches['day'];
+        } else {
+            return null;
+        }
+
+        if (!checkdate($month, $day, $year)) {
+            return null;
+        }
+
+        return Carbon::createFromDate($year, $month, $day)->format('Y-m-d');
     }
 }

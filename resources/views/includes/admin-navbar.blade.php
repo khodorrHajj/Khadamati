@@ -11,7 +11,7 @@
     </ul>
 
     <ul class="navbar-nav ml-auto">
-        <li class="nav-item dropdown">
+        <li class="nav-item dropdown" data-admin-live-navbar-notifications>
             <a class="nav-link" data-toggle="dropdown" href="#">
                 <i class="far fa-bell"></i>
                 <span id="admin-notification-badge" data-notification-count-badge class="badge badge-warning navbar-badge {{ $adminUnreadCount ? '' : 'd-none' }}">{{ $adminUnreadCount }}</span>
@@ -58,42 +58,5 @@
         </li>
     </ul>
 </nav>
-
-<script>
-    (function () {
-        const badge = document.getElementById('admin-notification-badge');
-        const countLabel = document.getElementById('admin-notification-count-label');
-
-        if (!badge || !countLabel) {
-            return;
-        }
-
-        async function refreshUnreadCount() {
-            try {
-                const response = await fetch(@json(route('admin.notifications.unread-count')), {
-                    headers: {
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'same-origin'
-                });
-
-                if (!response.ok) {
-                    return;
-                }
-
-                const data = await response.json();
-                const count = Number(data.unread_count || 0);
-
-                badge.textContent = count;
-                countLabel.textContent = count;
-                badge.classList.toggle('d-none', count === 0);
-            } catch (error) {
-                // Polling should fail quietly.
-            }
-        }
-
-        setInterval(refreshUnreadCount, 15000);
-    }());
-</script>
 
 @include('shared.notification-actions-scripts')

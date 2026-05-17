@@ -1,3 +1,3 @@
 <footer class="main-footer">
-    <strong>E-Services Citizen Portal</strong>
+    <strong>{{ config('app.name', 'Khadamati') }}</strong>
 </footer>

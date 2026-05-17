@@ -3,14 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\NationalId;
-use App\Models\PendingRegistration;
-use App\Models\Role;
-use App\Models\User;
+use App\Models\IdentityVerification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -21,22 +17,36 @@ class IdentityVerificationController extends Controller
     {
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', 'string', 'in:' . implode(',', NationalId::statuses())],
+            'status' => ['nullable', 'string', 'in:' . implode(',', IdentityVerification::statuses())],
         ]);
 
         $search = $validated['search'] ?? null;
         $status = $validated['status'] ?? null;
 
-        $verifications = NationalId::with('pendingRegistration', 'uploadedBy.role', 'reviewedBy')
+        $verifications = IdentityVerification::with('user.role', 'reviewer')
             ->when($status, fn ($query) => $query->where('status', $status))
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($verificationQuery) use ($search) {
-                    $verificationQuery->where('national_id_number', 'like', "%{$search}%")
-                        ->orWhere('national_id_number_normalized', 'like', "%{$search}%")
-                        ->orWhere('first_name_ar', 'like', "%{$search}%")
-                        ->orWhere('family_name_ar', 'like', "%{$search}%")
-                        ->orWhereHas('pendingRegistration', function ($pendingQuery) use ($search) {
-                            $pendingQuery->where('name', 'like', "%{$search}%")
+                    $verificationQuery->where('extracted_first_name', 'like', "%{$search}%")
+                        ->orWhere('extracted_family_name', 'like', "%{$search}%")
+                        ->orWhere('extracted_father_name', 'like', "%{$search}%")
+                        ->orWhere('extracted_mother_name', 'like', "%{$search}%")
+                        ->orWhere('extracted_mother_family_name', 'like', "%{$search}%")
+                        ->orWhere('extracted_full_name', 'like', "%{$search}%")
+                        ->orWhere('extracted_place_of_birth', 'like', "%{$search}%")
+                        ->orWhere('extracted_date_of_birth_text', 'like', "%{$search}%")
+                        ->orWhere('extracted_id_number', 'like', "%{$search}%")
+                        ->orWhere('extracted_gender', 'like', "%{$search}%")
+                        ->orWhere('extracted_marital_status', 'like', "%{$search}%")
+                        ->orWhere('extracted_record_number', 'like', "%{$search}%")
+                        ->orWhere('extracted_locality', 'like', "%{$search}%")
+                        ->orWhere('extracted_governorate', 'like', "%{$search}%")
+                        ->orWhere('extracted_district', 'like', "%{$search}%")
+                        ->orWhere('extracted_blood_type', 'like', "%{$search}%")
+                        ->orWhere('extracted_issue_date_text', 'like', "%{$search}%")
+                        ->orWhere('admin_notes', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
                         });
                 });
@@ -45,104 +55,89 @@ class IdentityVerificationController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $statuses = NationalId::statuses();
+        $statuses = IdentityVerification::statuses();
 
         return view('Admin.identity-verifications.index', compact('search', 'status', 'statuses', 'verifications'));
     }
 
-    public function show(NationalId $verification): View
+    public function show(IdentityVerification $verification): View
     {
-        $verification->load('pendingRegistration', 'uploadedBy.role', 'reviewedBy');
-        $imageExists = $verification->id_image_path
+        $verification->load('user.role', 'reviewer');
+        $frontImageExists = $verification->id_image_path
             && Storage::disk('public')->exists($verification->id_image_path);
+        $backImageExists = $verification->id_image_back_path
+            && Storage::disk('public')->exists($verification->id_image_back_path);
 
-        return view('Admin.identity-verifications.show', compact('verification', 'imageExists'));
+        return view('Admin.identity-verifications.show', compact('verification', 'frontImageExists', 'backImageExists'));
     }
 
-    public function image(NationalId $verification): StreamedResponse
+    public function image(Request $request, IdentityVerification $verification): StreamedResponse
     {
-        abort_if(!$verification->id_image_path || !Storage::disk('public')->exists($verification->id_image_path), 404, 'The uploaded ID image could not be found.');
+        $side = $request->query('side') === 'back' ? 'back' : 'front';
+        $path = $side === 'back' ? $verification->id_image_back_path : $verification->id_image_path;
 
-        return Storage::disk('public')->response($verification->id_image_path);
+        abort_if(
+            !$path || !Storage::disk('public')->exists($path),
+            404,
+            'The uploaded ID image could not be found.'
+        );
+
+        return Storage::disk('public')->response($path);
     }
 
-    public function approve(Request $request, NationalId $verification): RedirectResponse
+    public function approve(Request $request, IdentityVerification $verification): RedirectResponse
     {
         $validated = $request->validate([
             'admin_notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $verification->load('pendingRegistration');
-        $pending = $verification->pendingRegistration;
+        $verification->load('user');
+        $user = $verification->user;
 
-        abort_if(!$pending, 404);
+        abort_if(!$user, 404, 'The citizen account for this verification could not be found.');
 
-        if (User::where('email', $pending->email)->exists()) {
-            return redirect()
-                ->route('admin.identity-verifications.show', $verification)
-                ->withErrors(['email' => 'A user with this email already exists.']);
-        }
+        $user->update([
+            'is_active' => true,
+            'status' => 'active',
+            'email_verified_at' => $user->email_verified_at ?? now(),
+        ]);
 
-        $citizenRole = Role::where('role', 'citizen')->first();
-
-        abort_if(!$citizenRole, 422, 'Citizen role does not exist.');
-
-        DB::transaction(function () use ($verification, $pending, $citizenRole, $validated) {
-            $user = User::create([
-                'name' => $pending->name,
-                'email' => $pending->email,
-                'phone' => $pending->phone,
-                'password' => $pending->password,
-                'role_id' => $citizenRole->id,
-                'status' => 'active',
-                'is_active' => true,
-                'email_verified_at' => now(),
-                'two_factor_enabled' => true,
-            ]);
-
-            $verification->update([
-                'uploaded_by' => $user->id,
-                'status' => NationalId::STATUS_APPROVED,
-                'reviewed_by' => Auth::id(),
-                'reviewed_at' => now(),
-                'admin_notes' => $validated['admin_notes'] ?? null,
-            ]);
-
-            $pending->update([
-                'status' => PendingRegistration::STATUS_APPROVED,
-                'admin_notes' => $validated['admin_notes'] ?? null,
-            ]);
-        });
+        $verification->update([
+            'status' => IdentityVerification::STATUS_APPROVED,
+            'reviewed_by' => Auth::id(),
+            'reviewed_at' => now(),
+            'admin_notes' => $validated['admin_notes'] ?? null,
+        ]);
 
         return redirect()
             ->route('admin.identity-verifications.show', $verification)
-            ->with('success', 'National ID approved and citizen account created.');
+            ->with('success', 'Identity verification approved and citizen account activated.');
     }
 
-    public function reject(Request $request, NationalId $verification): RedirectResponse
+    public function reject(Request $request, IdentityVerification $verification): RedirectResponse
     {
         $validated = $request->validate([
             'admin_notes' => ['required', 'string', 'max:2000'],
         ]);
 
-        $verification->load('pendingRegistration');
+        $verification->load('user');
 
-        DB::transaction(function () use ($verification, $validated) {
-            $verification->update([
-                'status' => NationalId::STATUS_REJECTED,
-                'reviewed_by' => Auth::id(),
-                'reviewed_at' => now(),
-                'admin_notes' => $validated['admin_notes'],
+        if ($verification->user) {
+            $verification->user->update([
+                'is_active' => false,
+                'status' => 'inactive',
             ]);
+        }
 
-            $verification->pendingRegistration?->update([
-                'status' => PendingRegistration::STATUS_REJECTED,
-                'admin_notes' => $validated['admin_notes'],
-            ]);
-        });
+        $verification->update([
+            'status' => IdentityVerification::STATUS_REJECTED,
+            'reviewed_by' => Auth::id(),
+            'reviewed_at' => now(),
+            'admin_notes' => $validated['admin_notes'],
+        ]);
 
         return redirect()
             ->route('admin.identity-verifications.show', $verification)
-            ->with('success', 'National ID registration rejected.');
+            ->with('success', 'Identity verification rejected.');
     }
 }

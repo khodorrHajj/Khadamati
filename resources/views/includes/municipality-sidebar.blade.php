@@ -1,6 +1,6 @@
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="{{ route('municipality.dashboard') }}" class="brand-link">
-        <span class="brand-text font-weight-light">Municipality Portal</span>
+        <span class="brand-text font-weight-light">{{ config('app.name', 'Khadamati') }} Municipality</span>
     </a>
 
     <div class="sidebar">

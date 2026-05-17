@@ -1,6 +1,6 @@
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="{{ route('citizen.dashboard') }}" class="brand-link">
-        <span class="brand-text font-weight-light">Citizen Portal</span>
+        <span class="brand-text font-weight-light">{{ config('app.name', 'Khadamati') }}</span>
     </a>
 
     <div class="sidebar">
