@@ -13,6 +13,20 @@ use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
+    public function index()
+    {
+        $appointments = Appointment::where('user_id', Auth::id())
+            ->with(['timeSlot', 'serviceRequest.service.governmentOffice', 'governmentOffice'])
+            ->orderByDesc(
+                TimeSlot::select('starts_at')
+                    ->whereColumn('time_slots.id', 'appointments.time_slot_id')
+                    ->limit(1)
+            )
+            ->paginate(10);
+
+        return view('Citizen.appointments.index', compact('appointments'));
+    }
+
     public function store(
         StoreAppointmentRequest $request,
         ServiceRequest $serviceRequest,

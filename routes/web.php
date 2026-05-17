@@ -75,6 +75,50 @@ Route::get('/dev-login-municipality', function () {
     return redirect()->route('municipality.dashboard');
 })->name('dev.login.municipality');
 
+Route::get('/dev-login-citizen', function () {
+    if (!app()->isLocal()) {
+        abort(404);
+    }
+
+    $citizenRole = Role::where('role', 'citizen')->first();
+
+    if (!$citizenRole) {
+        return 'Citizen role not found. Please run database migrations.';
+    }
+
+    $citizen = User::where('role_id', $citizenRole->id)->first();
+
+    if (!$citizen) {
+        $citizen = User::create([
+            'name' => 'Dev Citizen',
+            'email' => 'dev-citizen@local.test',
+            'password' => bcrypt('password'),
+            'role_id' => $citizenRole->id,
+            'email_verified_at' => now(),
+            'is_active' => true,
+            'status' => 'active',
+        ]);
+    } else {
+        $citizen->update(['is_active' => true, 'status' => 'active']);
+    }
+
+    // Ensure an approved identity verification exists so middleware passes
+    \App\Models\IdentityVerification::firstOrCreate(
+        ['user_id' => $citizen->id],
+        ['status' => \App\Models\IdentityVerification::STATUS_APPROVED]
+    );
+
+    // If it exists but isn't approved, force-approve it
+    \App\Models\IdentityVerification::where('user_id', $citizen->id)
+        ->where('status', '!=', \App\Models\IdentityVerification::STATUS_APPROVED)
+        ->update(['status' => \App\Models\IdentityVerification::STATUS_APPROVED]);
+
+    Auth::login($citizen);
+    request()->session()->save();
+
+    return redirect()->route('citizen.dashboard');
+})->name('dev.login.citizen');
+
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin.php';
 require __DIR__ . '/municipality.php';

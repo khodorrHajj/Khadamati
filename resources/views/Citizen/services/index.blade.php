@@ -60,19 +60,28 @@
             </div>
             <div class="card-footer d-flex justify-content-between">
                 <a href="{{ route('citizen.services.index') }}" class="btn btn-secondary">Reset</a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-search mr-1"></i> Apply Filters
-                </button>
+                <div>
+                    <button type="button" id="sort-nearest-btn" class="btn btn-outline-info mr-2">
+                        <i class="fas fa-crosshairs mr-1"></i> Nearest to Me
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search mr-1"></i> Apply Filters
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 
-    <div class="row">
+    <div class="row" id="services-grid">
         @forelse ($services as $service)
-            <div class="col-xl-4 col-md-6">
+            <div class="col-xl-4 col-md-6 service-card-col"
+                 data-lat="{{ $service->governmentOffice?->latitude }}"
+                 data-lng="{{ $service->governmentOffice?->longitude }}"
+                 data-dist="">
                 <div class="card h-100">
-                    <div class="card-header">
-                        <h3 class="card-title">{{ $service->name }}</h3>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">{{ $service->name }}</h3>
+                        <span class="badge badge-info distance-badge d-none" style="font-size:11px;"></span>
                     </div>
                     <div class="card-body d-flex flex-column">
                         <dl class="row mb-3">
@@ -129,4 +138,65 @@
             {{ $services->links() }}
         </div>
     @endif
+
+@push('scripts')
+<script>
+document.getElementById('sort-nearest-btn').addEventListener('click', function() {
+    var btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Locating...';
+
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-crosshairs mr-1"></i> Nearest to Me';
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        var userLat = pos.coords.latitude;
+        var userLng = pos.coords.longitude;
+
+        function haversine(lat1, lng1, lat2, lng2) {
+            var R = 6371;
+            var dLat = (lat2 - lat1) * Math.PI / 180;
+            var dLng = (lng2 - lng1) * Math.PI / 180;
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2)
+                  + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180)
+                  * Math.sin(dLng/2) * Math.sin(dLng/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        var cols = Array.from(document.querySelectorAll('.service-card-col'));
+        cols.forEach(function(col) {
+            var lat = parseFloat(col.dataset.lat);
+            var lng = parseFloat(col.dataset.lng);
+            if (lat && lng) {
+                var d = haversine(userLat, userLng, lat, lng);
+                col.dataset.dist = d;
+                var badge = col.querySelector('.distance-badge');
+                badge.textContent = d.toFixed(1) + ' km';
+                badge.classList.remove('d-none');
+            } else {
+                col.dataset.dist = 99999;
+            }
+        });
+
+        cols.sort(function(a, b) {
+            return parseFloat(a.dataset.dist) - parseFloat(b.dataset.dist);
+        });
+
+        var grid = document.getElementById('services-grid');
+        cols.forEach(function(col) { grid.appendChild(col); });
+
+        btn.innerHTML = '<i class="fas fa-check mr-1"></i> Sorted by Distance';
+        btn.disabled = false;
+    }, function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-crosshairs mr-1"></i> Nearest to Me';
+        alert('Location access denied. Please allow location in your browser.');
+    });
+});
+</script>
+@endpush
 @endsection

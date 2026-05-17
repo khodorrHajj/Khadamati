@@ -50,7 +50,7 @@
                 <div class="icon">
                     <i class="fas fa-calendar-check"></i>
                 </div>
-                <a href="#recent-requests" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
+                <a href="{{ route('citizen.appointments.index') }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <div class="col-lg-2 col-md-4 col-sm-6" id="messages">
@@ -62,19 +62,19 @@
                 <div class="icon">
                     <i class="fas fa-envelope"></i>
                 </div>
-                <a href="#recent-requests" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
+                <a href="{{ route('citizen.messages.index') }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <div class="col-lg-2 col-md-4 col-sm-6" id="payments">
             <div class="small-box bg-danger">
                 <div class="inner">
-                    <h3>{{ $pendingPayments }}</h3>
-                    <p>Pending Payments</p>
+                    <h3>{{ $actionRequired }}</h3>
+                    <p>Action Required</p>
                 </div>
                 <div class="icon">
-                    <i class="fas fa-credit-card"></i>
+                    <i class="fas fa-exclamation-circle"></i>
                 </div>
-                <a href="#recent-requests" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
+                <a href="{{ route('citizen.requests.index', ['status' => \App\Models\ServiceRequest::STATUS_MISSING_DOCUMENTS]) }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
     </div>
@@ -146,8 +146,14 @@
                         <a href="{{ route('citizen.requests.index') }}" class="list-group-item list-group-item-action">
                             <i class="fas fa-file-alt mr-2 text-info"></i> Review My Requests
                         </a>
-                        <a href="#appointments" class="list-group-item list-group-item-action">
-                            <i class="fas fa-calendar-check mr-2 text-success"></i> Upcoming Appointments
+                        <a href="{{ route('citizen.appointments.index') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-calendar-check mr-2 text-success"></i> My Appointments
+                        </a>
+                        <a href="{{ route('citizen.messages.index') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-envelope mr-2 text-secondary"></i> Messages
+                            @if ($unreadMessages > 0)
+                                <span class="badge badge-danger float-right">{{ $unreadMessages }}</span>
+                            @endif
                         </a>
                     </div>
                 </div>

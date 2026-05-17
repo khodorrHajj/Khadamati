@@ -25,7 +25,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('citizen.dashboard') }}#appointments" class="nav-link">
+                    <a href="{{ route('citizen.appointments.index') }}" class="nav-link {{ request()->routeIs('citizen.appointments.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-calendar-check"></i>
                         <p>Appointments</p>
                     </a>
@@ -61,7 +61,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('citizen.dashboard') }}#profile" class="nav-link">
+                    <a href="{{ route('citizen.dashboard') }}" class="nav-link">
                         <i class="nav-icon fas fa-user"></i>
                         <p>Profile</p>
                     </a>

@@ -35,6 +35,7 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
         Route::get('/messages/unread-count', [RequestMessageController::class, 'unreadCount'])->name('messages.unread-count');
         Route::get('/messages/{serviceRequest}', [RequestMessageController::class, 'show'])->name('messages.show');
         Route::post('/requests/{serviceRequest}/messages', [RequestMessageController::class, 'store'])->name('requests.messages.store');
+        Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
         Route::post('/requests/{serviceRequest}/appointments', [AppointmentController::class, 'store'])->name('requests.appointments.store');
         // Stripe Payments
         Route::get('/services/{service}/pay',  [StripePaymentController::class, 'show'])->name('payment.show');

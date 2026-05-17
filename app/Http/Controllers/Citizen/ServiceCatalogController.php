@@ -120,10 +120,30 @@ class ServiceCatalogController extends Controller
         $offices = $data['offices'];
         $hasLocationFilter = $data['hasLocationFilter'];
 
+        $mapsKey = config('services.maps_key');
+        $mapOffices = GovernmentOffice::where('status', 'active')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->whereHas('services', fn($q) => $q->where('is_active', true))
+            ->get(['id', 'name', 'city', 'latitude', 'longitude', 'google_maps_url']);
+
+        $mapOfficesJson = $mapOffices->map(fn($o) => [
+            'id'       => $o->id,
+            'name'     => $o->name,
+            'city'     => $o->city,
+            'lat'      => (float) $o->latitude,
+            'lng'      => (float) $o->longitude,
+            'url'      => route('citizen.offices.show', $o->id),
+            'maps_url' => $o->google_maps_url,
+        ])->values()->toJson();
+
         return view('Citizen.offices.index', compact(
             'categories',
             'filters',
             'hasLocationFilter',
+            'mapOffices',
+            'mapOfficesJson',
+            'mapsKey',
             'municipalities',
             'offices'
         ));
@@ -152,7 +172,14 @@ class ServiceCatalogController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('Citizen.offices.show', compact('categories', 'office', 'services'));
+        $upcomingSlots = TimeSlot::where('government_office_id', $office->id)
+            ->where('is_available', true)
+            ->where('starts_at', '>', now())
+            ->orderBy('starts_at')
+            ->limit(5)
+            ->get();
+
+        return view('Citizen.offices.show', compact('categories', 'office', 'services', 'upcomingSlots'));
     }
 
     public function category(GovernmentOffice $office, ServiceCategory $category)
@@ -186,7 +213,53 @@ class ServiceCatalogController extends Controller
             return redirect()->route('citizen.payment.show', $service);
         }
 
-        return view('Citizen.services.request', compact('service'));
+        $mapsKey = config('services.maps_key');
+
+        // Other active offices that offer services in the same category
+        $nearbyOffices = GovernmentOffice::where('status', 'active')
+            ->where('id', '!=', $service->government_office_id)
+            ->whereHas('services', fn($q) => $q
+                ->where('is_active', true)
+                ->where('service_category_id', $service->service_category_id)
+            )
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get(['id', 'name', 'city', 'address', 'latitude', 'longitude', 'google_maps_url', 'phone']);
+
+        $officeMapData = null;
+        $office = $service->governmentOffice;
+        if ($office && $office->latitude && $office->longitude) {
+            $officeMapData = [
+                'id'       => $office->id,
+                'name'     => $office->name,
+                'city'     => $office->city,
+                'address'  => $office->address,
+                'lat'      => (float) $office->latitude,
+                'lng'      => (float) $office->longitude,
+                'maps_url' => $office->google_maps_url,
+                'phone'    => $office->phone,
+            ];
+        }
+
+        $nearbyOfficesJson = $nearbyOffices->map(fn($o) => [
+            'id'       => $o->id,
+            'name'     => $o->name,
+            'city'     => $o->city,
+            'address'  => $o->address,
+            'lat'      => (float) $o->latitude,
+            'lng'      => (float) $o->longitude,
+            'maps_url' => $o->google_maps_url,
+            'phone'    => $o->phone,
+            'url'      => route('citizen.offices.show', $o->id),
+        ])->values()->toJson();
+
+        return view('Citizen.services.request', compact(
+            'service',
+            'mapsKey',
+            'officeMapData',
+            'nearbyOffices',
+            'nearbyOfficesJson',
+        ));
     }
 
     public function storeRequest(
