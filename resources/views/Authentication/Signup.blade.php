@@ -19,7 +19,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('register') }}">
+            <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
                 @csrf
 
                 <div class="input-group mb-3">
@@ -60,6 +60,24 @@
 
                 <div class="input-group mb-3">
                     <input
+                        type="text"
+                        name="phone"
+                        value="{{ old('phone') }}"
+                        class="form-control @error('phone') is-invalid @enderror"
+                        placeholder="Phone"
+                    >
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-phone"></span>
+                        </div>
+                    </div>
+                    @error('phone')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="input-group mb-3">
+                    <input
                         type="password"
                         name="password"
                         class="form-control @error('password') is-invalid @enderror"
@@ -87,6 +105,20 @@
                             <span class="fas fa-lock"></span>
                         </div>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_image">Lebanese ID image</label>
+                    <input
+                        id="id_image"
+                        type="file"
+                        name="id_image"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="form-control @error('id_image') is-invalid @enderror"
+                    >
+                    @error('id_image')
+                        <span class="invalid-feedback d-block">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-block">Register</button>

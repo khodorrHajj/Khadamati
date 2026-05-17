@@ -5,13 +5,28 @@
 
 @section('content')
     @php
-        $rawOcrText = $verification->ocr_raw_text
-            ?? data_get($verification->ocr_raw_json, 'text')
-            ?? data_get($verification->ocr_raw_json, 'response.responses.0.fullTextAnnotation.text')
-            ?? '';
-        $ocrDiagnostics = data_get($verification->ocr_raw_json, 'diagnostics', []);
-        $ocrContext = data_get($verification->ocr_raw_json, 'context', []);
-        $fileDiagnostics = data_get($ocrContext, 'file', []);
+        $rawOcrText = $verification->raw_ocr_text ?? '';
+        $warnings = [];
+
+        if (!$verification->national_id_number_normalized) {
+            $warnings[] = 'National ID number was not detected.';
+        }
+
+        if (!$verification->first_name_ar) {
+            $warnings[] = 'First name was not detected.';
+        }
+
+        if (!$verification->family_name_ar) {
+            $warnings[] = 'Family name was not detected.';
+        }
+
+        if (preg_match('/\p{Arabic}/u', $rawOcrText)) {
+            $warnings[] = 'Arabic OCR detected, manual review required.';
+        }
+
+        if ($rawOcrText === '') {
+            $warnings[] = 'No text was detected. Try a clearer image or approve manually.';
+        }
     @endphp
 
     @if (session('success'))
@@ -58,20 +73,11 @@
                     <h3 class="card-title">OCR and Validation Warnings</h3>
                 </div>
                 <div class="card-body">
-                    @php($qualityWarnings = $verification->quality_result_json['warnings'] ?? [])
-                    @php($exifWarnings = $verification->exif_result_json['warnings'] ?? [])
-                    @php($validationWarnings = $verification->validation_result_json['warnings'] ?? [])
-                    @php($validationErrors = $verification->validation_result_json['errors'] ?? [])
-
-                    @foreach (array_merge($qualityWarnings, $exifWarnings, $validationWarnings, $validationErrors) as $warning)
+                    @foreach ($warnings as $warning)
                         <div class="alert alert-warning mb-2">{{ $warning }}</div>
                     @endforeach
 
-                    @if ($rawOcrText === '')
-                        <div class="alert alert-warning mb-2">No text was detected. Try a clearer image or approve manually.</div>
-                    @endif
-
-                    @if (!array_merge($qualityWarnings, $exifWarnings, $validationWarnings, $validationErrors))
+                    @if (!$warnings)
                         <p class="text-muted mb-0">No warnings recorded.</p>
                     @endif
                 </div>
@@ -89,47 +95,6 @@
                 </div>
             </div>
 
-            @if (app()->environment('local'))
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">OCR Diagnostics</h3>
-                    </div>
-                    <div class="card-body table-responsive">
-                        <table class="table table-sm table-bordered mb-0">
-                            <tbody>
-                                <tr>
-                                    <th>Stored Path</th>
-                                    <td><code>{{ $fileDiagnostics['stored_path'] ?? $verification->id_image_path ?? '-' }}</code></td>
-                                </tr>
-                                <tr>
-                                    <th>Physical Path</th>
-                                    <td><code>{{ $fileDiagnostics['absolute_path'] ?? '-' }}</code></td>
-                                </tr>
-                                <tr>
-                                    <th>File Exists / Readable</th>
-                                    <td>{{ ($fileDiagnostics['exists'] ?? false) ? 'Yes' : 'No' }} / {{ ($fileDiagnostics['readable'] ?? false) ? 'Yes' : 'No' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>File Size / MIME</th>
-                                    <td>{{ $fileDiagnostics['size'] ?? '-' }} bytes / {{ $fileDiagnostics['mime_type'] ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Raw Text Length</th>
-                                    <td>{{ strlen($rawOcrText) }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Annotations Count</th>
-                                    <td>{{ $ocrDiagnostics['text_annotations_count'] ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>OCR Attempt</th>
-                                    <td>{{ $ocrDiagnostics['attempt'] ?? '-' }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            @endif
         </div>
 
         <div class="col-lg-5">
@@ -142,11 +107,11 @@
                         <tbody>
                             <tr>
                                 <th>Citizen</th>
-                                <td>{{ $verification->user->name ?? '-' }}</td>
+                                <td>{{ $verification->pendingRegistration->name ?? $verification->uploadedBy->name ?? '-' }}</td>
                             </tr>
                             <tr>
                                 <th>Email</th>
-                                <td>{{ $verification->user->email ?? '-' }}</td>
+                                <td>{{ $verification->pendingRegistration->email ?? $verification->uploadedBy->email ?? '-' }}</td>
                             </tr>
                             <tr>
                                 <th>Status</th>
@@ -154,15 +119,35 @@
                             </tr>
                             <tr>
                                 <th>First Name / الاسم</th>
-                                <td>{{ $verification->extracted_first_name ?: '-' }}</td>
+                                <td>{{ $verification->first_name_ar ?: '-' }}</td>
                             </tr>
                             <tr>
                                 <th>Family Name / الشهرة</th>
-                                <td>{{ $verification->extracted_family_name ?: '-' }}</td>
+                                <td>{{ $verification->family_name_ar ?: '-' }}</td>
                             </tr>
                             <tr>
-                                <th>Matched Name</th>
-                                <td>{{ $verification->extracted_full_name ?: '-' }}</td>
+                                <th>Father Name / اسم الأب</th>
+                                <td>{{ $verification->father_name_ar ?: '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Mother Name / اسم الأم</th>
+                                <td>{{ $verification->mother_name_ar ?: '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Place of Birth / محل الولادة</th>
+                                <td>{{ $verification->place_of_birth_ar ?: '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Date of Birth / تاريخ الولادة</th>
+                                <td>{{ $verification->date_of_birth_text ?: '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>National ID Number</th>
+                                <td>{{ $verification->national_id_number ?: '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Normalized National ID</th>
+                                <td>{{ $verification->national_id_number_normalized ?: '-' }}</td>
                             </tr>
                             <tr>
                                 <th>OCR Confidence</th>
@@ -170,7 +155,7 @@
                             </tr>
                             <tr>
                                 <th>Reviewed By</th>
-                                <td>{{ $verification->reviewer->name ?? '-' }}</td>
+                                <td>{{ $verification->reviewedBy->name ?? '-' }}</td>
                             </tr>
                         </tbody>
                     </table>

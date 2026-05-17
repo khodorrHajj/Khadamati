@@ -24,7 +24,7 @@
             <form method="GET" action="{{ route('admin.identity-verifications.index') }}">
                 <div class="form-row">
                     <div class="col-md-6 mb-2">
-                        <input type="text" name="search" value="{{ old('search', $search) }}" class="form-control" placeholder="Search by citizen, email, first name, or family name">
+                        <input type="text" name="search" value="{{ old('search', $search) }}" class="form-control" placeholder="Search by citizen, email, national ID, first name, or family name">
                     </div>
                     <div class="col-md-3 mb-2">
                         <select name="status" class="custom-select">
@@ -55,6 +55,7 @@
                         <th>Status</th>
                         <th>First Name</th>
                         <th>Family Name</th>
+                        <th>National ID</th>
                         <th>Submitted</th>
                         <th>Actions</th>
                     </tr>
@@ -63,15 +64,16 @@
                     @forelse ($verifications as $verification)
                         <tr>
                             <td>{{ $verification->id }}</td>
-                            <td>{{ $verification->user->name ?? 'Unknown Citizen' }}</td>
-                            <td>{{ $verification->user->email ?? '-' }}</td>
+                            <td>{{ $verification->pendingRegistration->name ?? $verification->uploadedBy->name ?? 'Unknown Citizen' }}</td>
+                            <td>{{ $verification->pendingRegistration->email ?? $verification->uploadedBy->email ?? '-' }}</td>
                             <td>
                                 <span class="badge badge-{{ $verification->status === 'approved' ? 'success' : ($verification->status === 'rejected' ? 'danger' : 'secondary') }}">
                                     {{ ucwords(str_replace('_', ' ', $verification->status)) }}
                                 </span>
                             </td>
-                            <td>{{ $verification->extracted_first_name ?: '-' }}</td>
-                            <td>{{ $verification->extracted_family_name ?: '-' }}</td>
+                            <td>{{ $verification->first_name_ar ?: '-' }}</td>
+                            <td>{{ $verification->family_name_ar ?: '-' }}</td>
+                            <td>{{ $verification->national_id_number_normalized ?: '-' }}</td>
                             <td>{{ optional($verification->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
                             <td>
                                 <a href="{{ route('admin.identity-verifications.show', $verification) }}" class="btn btn-info btn-sm">Review</a>
@@ -79,7 +81,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center">No ID verifications found.</td>
+                            <td colspan="9" class="text-center">No ID verifications found.</td>
                         </tr>
                     @endforelse
                 </tbody>

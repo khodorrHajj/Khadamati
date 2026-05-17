@@ -81,6 +81,11 @@ class User extends Authenticatable
         return $this->hasOne(IdentityVerification::class, 'user_id', 'id')->latestOfMany();
     }
 
+    public function nationalId()
+    {
+        return $this->hasOne(NationalId::class, 'uploaded_by', 'id');
+    }
+
     public function feedback()
     {
         return $this->hasMany(Feedback::class, 'user_id', 'id');

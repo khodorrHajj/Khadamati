@@ -5,10 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\IdentityVerification;
+use App\Models\NationalId;
+use App\Models\PendingRegistration;
+use App\Services\IdentityOcrService;
+use App\Services\LebaneseNationalIdParser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Laravel\Socialite\Socialite;
 use Throwable;
 
@@ -19,12 +25,20 @@ class LoginController extends Controller
         return view('Authentication.Signup');
     }
 
-    public function register(Request $request)
+    public function register(Request $request, IdentityOcrService $ocrService, LebaneseNationalIdParser $parser)
     {
         $validated = $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|confirmed|min:6',
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email'),
+                Rule::unique('pending_registrations', 'email'),
+            ],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'password' => ['required', 'confirmed', 'min:6'],
+            'id_image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         $citizenRole = Role::where('role', 'citizen')->first();
@@ -35,24 +49,57 @@ class LoginController extends Controller
             ]);
         }
 
-        $code = random_int(100000, 999999);
+        $imagePath = $request->file('id_image')->store('identity-verifications', 'public');
+        $ocr = $ocrService->analyze($imagePath);
+        $rawText = $ocr['text'] ?? '';
+        $fields = $parser->parse($rawText);
+        $normalizedNationalId = $fields['national_id_number_normalized'] ?? null;
 
-        $request->session()->put('pending_registration', [
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role_id' => $citizenRole->id,
-            'code' => Hash::make($code),
-            'expires_at' => now()->addMinutes(10)->toDateTimeString(),
-        ]);
+        if (
+            $normalizedNationalId
+            && NationalId::where('national_id_number_normalized', $normalizedNationalId)
+                ->whereIn('status', NationalId::statuses())
+                ->exists()
+        ) {
+            return redirect()->back()
+                ->withInput($request->except(['password', 'password_confirmation', 'id_image']))
+                ->withErrors([
+                    'id_image' => 'This national ID is already registered or pending review.',
+                ]);
+        }
 
-        Mail::raw("Your verification code is: " . $code, function ($message) use ($validated) {
-            $message->to($validated['email']);
-            $message->subject('Verify Your E-Services Account');
+        DB::transaction(function () use ($validated, $imagePath, $ocr, $rawText, $fields) {
+            $nationalId = NationalId::create([
+                'national_id_number' => $fields['national_id_number'] ?? null,
+                'national_id_number_normalized' => $fields['national_id_number_normalized'] ?? null,
+                'first_name_ar' => $fields['first_name_ar'] ?? null,
+                'family_name_ar' => $fields['family_name_ar'] ?? null,
+                'father_name_ar' => $fields['father_name_ar'] ?? null,
+                'mother_name_ar' => $fields['mother_name_ar'] ?? null,
+                'place_of_birth_ar' => $fields['place_of_birth_ar'] ?? null,
+                'date_of_birth_text' => $fields['date_of_birth_text'] ?? null,
+                'raw_ocr_text' => $rawText,
+                'id_image_path' => $imagePath,
+                'ocr_confidence' => $ocr['confidence'] ?? null,
+                'status' => NationalId::STATUS_PENDING_REVIEW,
+            ]);
+
+            $pendingRegistration = PendingRegistration::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'password' => Hash::make($validated['password']),
+                'national_id_id' => $nationalId->id,
+                'status' => PendingRegistration::STATUS_PENDING_REVIEW,
+            ]);
+
+            $nationalId->update([
+                'pending_registration_id' => $pendingRegistration->id,
+            ]);
         });
 
-        return redirect()->route('twofactor.form')
-            ->with('success', 'A verification code was sent to your email.');
+        return redirect()->route('login')
+            ->with('success', 'Your registration is pending admin ID verification.');
     }
 
     public function login()

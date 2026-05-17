@@ -28,7 +28,8 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center">
                 <div class="d-flex flex-wrap align-items-center mb-2 mb-md-0">
                     <h4 class="mb-0 mr-3">
-                        <code>{{ $serviceRequest->tracking_code }}</code>
+                        Request #{{ $serviceRequest->id }}
+                        <code class="ml-2">{{ $serviceRequest->tracking_code }}</code>
                     </h4>
                     <span class="badge badge-light border mr-2">{{ $serviceRequest->status }}</span>
                     @if ($serviceRequest->isClosed())
