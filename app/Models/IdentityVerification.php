@@ -17,12 +17,26 @@ class IdentityVerification extends Model
     protected $fillable = [
         'user_id',
         'id_image_path',
+        'id_image_back_path',
         'status',
         'extracted_first_name',
         'extracted_family_name',
+        'extracted_father_name',
+        'extracted_mother_name',
+        'extracted_mother_family_name',
         'extracted_full_name',
+        'extracted_place_of_birth',
+        'extracted_date_of_birth_text',
         'extracted_id_number',
         'extracted_date_of_birth',
+        'extracted_gender',
+        'extracted_marital_status',
+        'extracted_record_number',
+        'extracted_locality',
+        'extracted_governorate',
+        'extracted_district',
+        'extracted_blood_type',
+        'extracted_issue_date_text',
         'ocr_confidence',
         'ocr_raw_text',
         'ocr_raw_json',
@@ -73,5 +87,14 @@ class IdentityVerification extends Model
         }
 
         return Storage::disk('public')->url($this->id_image_path);
+    }
+
+    public function getIdImageBackUrlAttribute(): ?string
+    {
+        if (!$this->id_image_back_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->id_image_back_path);
     }
 }

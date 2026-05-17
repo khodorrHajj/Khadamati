@@ -19,12 +19,15 @@
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Citizen ID Reviews</h3>
+            <div class="card-tools">
+                <span class="text-muted small">Auto-refreshing every 10 seconds</span>
+            </div>
         </div>
         <div class="card-body">
             <form method="GET" action="{{ route('admin.identity-verifications.index') }}">
                 <div class="form-row">
                     <div class="col-md-6 mb-2">
-                        <input type="text" name="search" value="{{ old('search', $search) }}" class="form-control" placeholder="Search by citizen, email, national ID, first name, or family name">
+                        <input type="text" name="search" value="{{ old('search', $search) }}" class="form-control" placeholder="Search by citizen, email, ID number, names, location fields, issue date, blood type, or admin notes">
                     </div>
                     <div class="col-md-3 mb-2">
                         <select name="status" class="custom-select">
@@ -45,6 +48,7 @@
                 </div>
             </form>
         </div>
+        <div data-admin-live-region="identity-verification-queue">
         <div class="card-body table-responsive p-0">
             <table class="table table-bordered table-striped mb-0">
                 <thead>
@@ -53,9 +57,9 @@
                         <th>Citizen</th>
                         <th>Email</th>
                         <th>Status</th>
-                        <th>First Name</th>
-                        <th>Family Name</th>
-                        <th>National ID</th>
+                        <th>Extracted Name</th>
+                        <th>Extracted ID</th>
+                        <th>OCR Confidence</th>
                         <th>Submitted</th>
                         <th>Actions</th>
                     </tr>
@@ -64,16 +68,16 @@
                     @forelse ($verifications as $verification)
                         <tr>
                             <td>{{ $verification->id }}</td>
-                            <td>{{ $verification->pendingRegistration->name ?? $verification->uploadedBy->name ?? 'Unknown Citizen' }}</td>
-                            <td>{{ $verification->pendingRegistration->email ?? $verification->uploadedBy->email ?? '-' }}</td>
+                            <td>{{ $verification->user->name ?? 'Unknown Citizen' }}</td>
+                            <td>{{ $verification->user->email ?? '-' }}</td>
                             <td>
-                                <span class="badge badge-{{ $verification->status === 'approved' ? 'success' : ($verification->status === 'rejected' ? 'danger' : 'secondary') }}">
+                                <span class="badge badge-{{ $verification->status === 'approved' ? 'success' : ($verification->status === 'rejected' ? 'danger' : ($verification->status === 'needs_review' ? 'warning' : 'secondary')) }}">
                                     {{ ucwords(str_replace('_', ' ', $verification->status)) }}
                                 </span>
                             </td>
-                            <td>{{ $verification->first_name_ar ?: '-' }}</td>
-                            <td>{{ $verification->family_name_ar ?: '-' }}</td>
-                            <td>{{ $verification->national_id_number_normalized ?: '-' }}</td>
+                            <td>{{ $verification->extracted_full_name ?: collect([$verification->extracted_first_name, $verification->extracted_family_name])->filter()->join(' ') ?: '-' }}</td>
+                            <td>{{ $verification->extracted_id_number ?: '-' }}</td>
+                            <td>{{ $verification->ocr_confidence !== null ? number_format($verification->ocr_confidence * 100, 1) . '%' : '-' }}</td>
                             <td>{{ optional($verification->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
                             <td>
                                 <a href="{{ route('admin.identity-verifications.show', $verification) }}" class="btn btn-info btn-sm">Review</a>
@@ -92,5 +96,6 @@
                 {{ $verifications->links() }}
             </div>
         @endif
+        </div>
     </div>
 @endsection

@@ -35,5 +35,6 @@ Route::middleware('checkIfConnected')->group(function () {
         ->name('request-messages.attachments.download');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/identity-verification', [IdentityVerificationController::class, 'create'])->name('identity.verification.create');
+    Route::get('/identity-verification/status', [IdentityVerificationController::class, 'status'])->name('identity.verification.status');
     Route::post('/identity-verification', [IdentityVerificationController::class, 'store'])->name('identity.verification.store');
 });

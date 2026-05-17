@@ -105,12 +105,82 @@ class IdentityOcrService
         }
     }
 
+    public function analyzeForNationalIdLookup(string $diskPath): array
+    {
+        $absolutePath = Storage::disk('public')->path($diskPath);
+        $fileDiagnostics = $this->fileDiagnostics($diskPath, $absolutePath);
+
+        if (!$fileDiagnostics['exists'] || !$fileDiagnostics['readable']) {
+            return $this->failure('Uploaded identity image file is missing or unreadable.', [
+                'file' => $fileDiagnostics,
+            ]);
+        }
+
+        $credentialsPath = $this->resolveCredentialsPath(config('identity.google_application_credentials'));
+
+        if (!$credentialsPath || !is_file($credentialsPath)) {
+            return $this->failure('Google Vision credentials are unavailable.', [
+                'stored_path' => $diskPath,
+                'file' => $fileDiagnostics,
+            ]);
+        }
+
+        try {
+            $documentResult = $this->runGoogleVision(
+                $absolutePath,
+                $credentialsPath,
+                FeatureType::DOCUMENT_TEXT_DETECTION,
+                'lookup_document',
+                [
+                    'timeoutMillis' => 10000,
+                    'retrySettings' => ['retriesEnabled' => false],
+                ]
+            );
+
+            if (filled($documentResult['text'])) {
+                return $this->withContext($documentResult, [
+                    'stored_path' => $diskPath,
+                    'file' => $fileDiagnostics,
+                ]);
+            }
+
+            return $this->withContext(
+                $this->runGoogleVision(
+                    $absolutePath,
+                    $credentialsPath,
+                    FeatureType::TEXT_DETECTION,
+                    'lookup_text',
+                    [
+                        'timeoutMillis' => 10000,
+                        'retrySettings' => ['retriesEnabled' => false],
+                    ]
+                ),
+                [
+                    'stored_path' => $diskPath,
+                    'file' => $fileDiagnostics,
+                ]
+            );
+        } catch (\Throwable $exception) {
+            return $this->failure('Google Vision OCR lookup failed.', [
+                'stored_path' => $diskPath,
+                'file' => $fileDiagnostics,
+                'exception' => $exception->getMessage(),
+            ]);
+        }
+    }
+
     public function extractFieldsFromText(string $text): array
     {
         return $this->extractFields($text);
     }
 
-    private function runGoogleVision(string $absolutePath, string $credentialsPath, int $featureType, string $attempt): array
+    private function runGoogleVision(
+        string $absolutePath,
+        string $credentialsPath,
+        int $featureType,
+        string $attempt,
+        array $callOptions = []
+    ): array
     {
         $credentials = new ServiceAccountCredentials(ImageAnnotatorClient::$serviceScopes, $credentialsPath);
         $client = new ImageAnnotatorClient([
@@ -125,7 +195,8 @@ class IdentityOcrService
                 ->setImageContext((new ImageContext())->setLanguageHints(['ar', 'en']));
 
             $response = $client->batchAnnotateImages(
-                (new BatchAnnotateImagesRequest())->setRequests([$request])
+                (new BatchAnnotateImagesRequest())->setRequests([$request]),
+                $callOptions
             );
         } finally {
             $client->close();

@@ -4,6 +4,7 @@
 @section('page-title', 'Admin Dashboard')
 
 @section('content')
+    <div data-admin-live-region="admin-dashboard" data-admin-live-init="dashboard">
     {{-- Welcome Row --}}
     <div class="row">
         <div class="col-md-8">
@@ -288,130 +289,147 @@
             </div>
         </div>
     </div>
+    <script type="application/json" id="admin-dashboard-chart-data">
+        {
+            "requestsTrendLabels": @json($requestsTrend->keys()->map(fn($d) => \Carbon\Carbon::parse($d)->format('M d'))),
+            "requestsTrendData": @json($requestsTrend->values()),
+            "statusLabels": @json(array_keys($statusDistribution)),
+            "statusData": @json(array_values($statusDistribution)),
+            "revenueTrendLabels": @json($revenueTrend->keys()->map(fn($d) => \Carbon\Carbon::parse($d)->format('M d'))),
+            "revenueTrendData": @json($revenueTrend->values())
+        }
+    </script>
+    </div>
 @endsection
 
 @push('scripts')
     <script src="{{ asset('assets/adminlte/plugins/chart.js/Chart.min.js') }}"></script>
     <script>
-        // Color palette
-        var palette = {
-            blue: '#007bff',
-            green: '#28a745',
-            red: '#dc3545',
-            yellow: '#ffc107',
-            cyan: '#17a2b8',
-            orange: '#fd7e14',
-            purple: '#6f42c1',
-            gray: '#6c757d',
-            teal: '#20c997',
-            pink: '#e83e8c',
-        };
+        (() => {
+            const callbacks = window.AdminLiveCallbacks = window.AdminLiveCallbacks || {};
 
-        // Status colors map
-        var statusColors = {
-            'Pending': palette.yellow,
-            'In Review': palette.cyan,
-            'Missing Documents': palette.orange,
-            'Approved': palette.green,
-            'Rejected': palette.red,
-            'Completed': palette.blue,
-        };
+            callbacks.dashboard = {
+                init(region) {
+                    if (!region) {
+                        return;
+                    }
 
-        // --- Requests Trend Line Chart ---
-        var requestsTrendLabels = @json($requestsTrend->keys()->map(fn($d) => \Carbon\Carbon::parse($d)->format('M d')));
-        var requestsTrendData = @json($requestsTrend->values());
+                    const dataScript = region.querySelector('#admin-dashboard-chart-data');
 
-        new Chart(document.getElementById('requestsTrendChart'), {
-            type: 'line',
-            data: {
-                labels: requestsTrendLabels,
-                datasets: [{
-                    label: 'New Requests',
-                    data: requestsTrendData,
-                    borderColor: palette.cyan,
-                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 2,
-                    pointHoverRadius: 5,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    yAxes: [{
-                        ticks: { beginAtZero: true, precision: 0 },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    }],
-                    xAxes: [{
-                        grid: { display: false }
-                    }]
+                    if (!dataScript || typeof Chart === 'undefined') {
+                        return;
+                    }
+
+                    const chartData = JSON.parse(dataScript.textContent);
+                    const palette = {
+                        blue: '#007bff',
+                        green: '#28a745',
+                        red: '#dc3545',
+                        yellow: '#ffc107',
+                        cyan: '#17a2b8',
+                        orange: '#fd7e14',
+                        gray: '#6c757d',
+                    };
+                    const statusColors = {
+                        'Pending': palette.yellow,
+                        'In Review': palette.cyan,
+                        'Missing Documents': palette.orange,
+                        'Approved': palette.green,
+                        'Rejected': palette.red,
+                        'Completed': palette.blue,
+                    };
+                    const charts = [];
+
+                    charts.push(new Chart(region.querySelector('#requestsTrendChart'), {
+                        type: 'line',
+                        data: {
+                            labels: chartData.requestsTrendLabels,
+                            datasets: [{
+                                label: 'New Requests',
+                                data: chartData.requestsTrendData,
+                                borderColor: palette.cyan,
+                                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            scales: {
+                                yAxes: [{
+                                    ticks: { beginAtZero: true, precision: 0 },
+                                    grid: { color: 'rgba(0,0,0,0.05)' }
+                                }],
+                                xAxes: [{
+                                    grid: { display: false }
+                                }]
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    }));
+
+                    charts.push(new Chart(region.querySelector('#statusDistChart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: chartData.statusLabels,
+                            datasets: [{
+                                data: chartData.statusData,
+                                backgroundColor: chartData.statusLabels.map((status) => statusColors[status] || palette.gray),
+                                borderWidth: 2,
+                                borderColor: '#fff',
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            legend: {
+                                position: 'bottom',
+                                labels: { padding: 15, usePointStyle: true }
+                            }
+                        }
+                    }));
+
+                    charts.push(new Chart(region.querySelector('#revenueTrendChart'), {
+                        type: 'line',
+                        data: {
+                            labels: chartData.revenueTrendLabels,
+                            datasets: [{
+                                label: 'Revenue ($)',
+                                data: chartData.revenueTrendData,
+                                borderColor: palette.green,
+                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            scales: {
+                                yAxes: [{
+                                    ticks: { beginAtZero: true },
+                                    grid: { color: 'rgba(0,0,0,0.05)' }
+                                }],
+                                xAxes: [{
+                                    grid: { display: false }
+                                }]
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    }));
+
+                    region.__adminCharts = charts;
                 },
-                plugins: { legend: { display: false } }
-            }
-        });
-
-        // --- Status Distribution Doughnut Chart ---
-        var statusLabels = @json(array_keys($statusDistribution));
-        var statusData = @json(array_values($statusDistribution));
-        var statusBgColors = statusLabels.map(function(s) { return statusColors[s] || palette.gray; });
-
-        new Chart(document.getElementById('statusDistChart'), {
-            type: 'doughnut',
-            data: {
-                labels: statusLabels,
-                datasets: [{
-                    data: statusData,
-                    backgroundColor: statusBgColors,
-                    borderWidth: 2,
-                    borderColor: '#fff',
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                legend: {
-                    position: 'bottom',
-                    labels: { padding: 15, usePointStyle: true }
+                teardown(region) {
+                    (region.__adminCharts || []).forEach((chart) => chart.destroy());
+                    region.__adminCharts = [];
                 }
-            }
-        });
-
-        // --- Revenue Trend Line Chart ---
-        var revenueTrendLabels = @json($revenueTrend->keys()->map(fn($d) => \Carbon\Carbon::parse($d)->format('M d')));
-        var revenueTrendData = @json($revenueTrend->values());
-
-        new Chart(document.getElementById('revenueTrendChart'), {
-            type: 'line',
-            data: {
-                labels: revenueTrendLabels,
-                datasets: [{
-                    label: 'Revenue ($)',
-                    data: revenueTrendData,
-                    borderColor: palette.green,
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 2,
-                    pointHoverRadius: 5,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    yAxes: [{
-                        ticks: { beginAtZero: true },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    }],
-                    xAxes: [{
-                        grid: { display: false }
-                    }]
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
+            };
+        })();
     </script>
 @endpush
-

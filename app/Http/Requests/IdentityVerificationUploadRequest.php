@@ -14,7 +14,8 @@ class IdentityVerificationUploadRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id_image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'id_image_front' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'id_image_back' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }

@@ -1,6 +1,6 @@
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="{{ route('admin.dashboard') }}" class="brand-link">
-        <span class="brand-text font-weight-light">E-Services Admin</span>
+        <span class="brand-text font-weight-light">{{ config('app.name', 'Khadamati') }} Admin</span>
     </a>
 
     <div class="sidebar">

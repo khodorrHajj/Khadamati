@@ -1,3 +1,3 @@
 <footer class="main-footer">
-    <strong>Municipality Portal</strong>
+    <strong>{{ config('app.name', 'Khadamati') }} Municipality</strong>
 </footer>
