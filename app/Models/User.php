@@ -9,6 +9,18 @@ class User extends Authenticatable
 {
     use Notifiable;
 
+    public const POSITION_HEAD_OF_OFFICE = 'Head of Office';
+    public const POSITION_DEPUTY_HEAD = 'Deputy Head';
+    public const POSITION_EMPLOYEE = 'Employee';
+    public const POSITION_SECRETARY = 'Secretary';
+
+    public const MUNICIPALITY_POSITIONS = [
+        self::POSITION_HEAD_OF_OFFICE,
+        self::POSITION_DEPUTY_HEAD,
+        self::POSITION_EMPLOYEE,
+        self::POSITION_SECRETARY,
+    ];
+
     protected $fillable = [
         'name',
         'email',
@@ -57,6 +69,21 @@ class User extends Authenticatable
     public function serviceRequests()
     {
         return $this->hasMany(ServiceRequest::class, 'user_id', 'id');
+    }
+
+    public function identityVerifications()
+    {
+        return $this->hasMany(IdentityVerification::class, 'user_id', 'id');
+    }
+
+    public function latestIdentityVerification()
+    {
+        return $this->hasOne(IdentityVerification::class, 'user_id', 'id')->latestOfMany();
+    }
+
+    public function nationalId()
+    {
+        return $this->hasOne(NationalId::class, 'uploaded_by', 'id');
     }
 
     public function feedback()

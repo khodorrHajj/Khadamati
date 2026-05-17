@@ -26,7 +26,7 @@ class StoreMunicipalityUserRequest extends FormRequest
                 'unique:users,phone',
             ],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'job_title' => ['nullable', 'string', 'max:255'],
+            'job_title' => ['nullable', 'string', Rule::in(\App\Models\User::MUNICIPALITY_POSITIONS)],
             'status' => ['required', Rule::in(['active', 'inactive'])],
         ];
     }

@@ -16,12 +16,49 @@
         </div>
     @endif
 
+    @if ($serviceRequest->needsCitizenDocuments())
+        <div class="alert alert-warning">
+            <h5 class="mb-2"><i class="fas fa-file-upload mr-1"></i> Missing Documents</h5>
+            <p class="mb-2">The municipality needs more documents before this request can continue.</p>
+            <p class="mb-3">{!! nl2br(e($serviceRequest->notes ?: 'Please upload the requested files and message the municipality if you need clarification.')) !!}</p>
+            @if (count($serviceRequest->missingDocumentList()))
+                <div class="mb-3">
+                    <strong>Requested Documents</strong>
+                    <ul class="mb-0 mt-2">
+                        @foreach ($serviceRequest->missingDocumentList() as $documentItem)
+                            <li>{{ $documentItem }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <a href="#documents-upload" class="btn btn-warning btn-sm mr-2">Upload Requested Documents</a>
+            <a href="{{ route('citizen.messages.show', $serviceRequest) }}" class="btn btn-outline-dark btn-sm">Ask The Municipality</a>
+        </div>
+    @elseif ($serviceRequest->isOverdue())
+        <div class="alert alert-danger">
+            <h5 class="mb-2"><i class="fas fa-exclamation-circle mr-1"></i> Request Overdue</h5>
+            <p class="mb-2">
+                This request has passed the expected service duration of {{ $serviceRequest->service?->durationLabel() ?? 'the expected timeframe' }}.
+            </p>
+            <p class="mb-3">
+                Expected by {{ optional($serviceRequest->dueAt())->format('Y-m-d H:i') ?: '-' }}.
+                It is currently overdue by {{ $serviceRequest->overdueDays() }} day{{ $serviceRequest->overdueDays() === 1 ? '' : 's' }}.
+            </p>
+            <a href="{{ route('citizen.messages.show', $serviceRequest) }}" class="btn btn-danger btn-sm">Message Municipality</a>
+        </div>
+    @endif
+
     <div class="row">
         <div class="col-lg-7">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Request #{{ $serviceRequest->id }}</h3>
-                    <a href="{{ route('tracking.show', $serviceRequest->tracking_code) }}" class="btn btn-secondary btn-sm">Public Tracking View</a>
+                    <div class="d-flex align-items-center">
+                        <a href="{{ route('citizen.requests.receipt.download', $serviceRequest) }}" class="btn btn-outline-primary btn-sm mr-2">
+                            <i class="fas fa-file-pdf"></i> Receipt PDF
+                        </a>
+                        <a href="{{ route('citizen.requests.index') }}" class="btn btn-secondary btn-sm">Back to My Requests</a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table class="table table-bordered">
@@ -32,11 +69,28 @@
                             </tr>
                             <tr>
                                 <th>Status</th>
-                                <td>{{ $serviceRequest->status }}</td>
+                                <td>
+                                    <span class="badge badge-light border">{{ $serviceRequest->status }}</span>
+                                    @if ($serviceRequest->isOverdue())
+                                        <span class="badge badge-danger ml-1">Overdue</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Public Tracking URL</th>
+                                <td>
+                                    <a href="{{ route('tracking.show', $serviceRequest->tracking_code) }}" target="_blank" rel="noopener">
+                                        {{ route('tracking.show', $serviceRequest->tracking_code) }}
+                                    </a>
+                                </td>
                             </tr>
                             <tr>
                                 <th>Office</th>
                                 <td>{{ $serviceRequest->service?->governmentOffice?->name ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Municipality</th>
+                                <td>{{ $serviceRequest->service?->governmentOffice?->municipality?->name ?? '-' }}</td>
                             </tr>
                             <tr>
                                 <th>Category</th>
@@ -47,7 +101,7 @@
                                 <td>{{ $serviceRequest->service?->name ?? '-' }}</td>
                             </tr>
                             <tr>
-                                <th>Notes</th>
+                                <th>Submitted Notes</th>
                                 <td>{!! nl2br(e($serviceRequest->notes ?: 'No notes provided.')) !!}</td>
                             </tr>
                             <tr>
@@ -61,23 +115,68 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Uploaded Documents</h3>
+                    <h3 class="card-title">Citizen Uploaded Documents</h3>
                 </div>
-                <div class="card-body">
-                    @forelse ($serviceRequest->requestDocuments as $document)
-                        <div class="mb-2">
-                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($document->document_path) }}" target="_blank" rel="noopener">
-                                {{ $document->original_name ?: basename($document->document_path) }}
-                            </a>
-                            @if ($document->document_type)
-                                <span class="text-muted small">({{ $document->document_type }})</span>
-                            @endif
-                        </div>
-                    @empty
-                        <p class="text-muted mb-0">No documents uploaded yet.</p>
-                    @endforelse
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover text-nowrap mb-0">
+                        <thead>
+                            <tr>
+                                <th>Document</th>
+                                <th>Type</th>
+                                <th>Uploaded</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($serviceRequest->requestDocuments as $document)
+                                <tr>
+                                    <td>{{ $document->original_name ?: basename($document->document_path) }}</td>
+                                    <td>{{ $document->document_type ?: 'Submitted document' }}</td>
+                                    <td>{{ optional($document->created_at)->format('Y-m-d H:i') ?: '-' }}</td>
+                                    <td>
+                                        <a href="{{ route('citizen.requests.documents.download', [$serviceRequest, $document]) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No documents uploaded yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Official Response Documents</h3>
+                </div>
+                <div class="card-body">
+                    @if ($serviceRequest->official_response_path)
+                        <a href="{{ route('citizen.requests.official-response.download', $serviceRequest) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-download"></i>
+                            {{ $serviceRequest->official_response_original_name ?: 'Download official response' }}
+                        </a>
+                        <div class="text-muted small mt-2">
+                            {{ $serviceRequest->official_response_document_type ?: 'Official Response' }}
+                        </div>
+                    @else
+                        <p class="text-muted mb-0">No official response document has been uploaded yet.</p>
+                    @endif
+                </div>
+            </div>
+
+            @include('shared.request-timeline', [
+                'entries' => $serviceRequest->timelineForDisplay(),
+                'title' => 'Request History',
+            ])
+
+            @include('shared.request-tracking-qr', [
+                'serviceRequest' => $serviceRequest,
+                'title' => 'Track With QR Code',
+            ])
         </div>
 
         <div class="col-lg-5">
@@ -85,13 +184,28 @@
                 <div class="card-header">
                     <h3 class="card-title">Upload Additional Document</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body" id="documents-upload">
+                    @if ($serviceRequest->needsCitizenDocuments())
+                        <div class="alert alert-warning">
+                            Upload the files requested by the municipality here. They will be attached directly to this request.
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('citizen.requests.documents.store', $serviceRequest) }}" enctype="multipart/form-data">
                         @csrf
 
                         <div class="form-group">
                             <label>Document Type</label>
-                            <input type="text" name="document_type" value="{{ old('document_type') }}" class="form-control @error('document_type') is-invalid @enderror" placeholder="Optional label, e.g. ID Copy">
+                            @if ($serviceRequest->needsCitizenDocuments() && count($serviceRequest->missingDocumentList()))
+                                <select name="document_type" class="custom-select @error('document_type') is-invalid @enderror">
+                                    <option value="">Select the requested document</option>
+                                    @foreach ($serviceRequest->missingDocumentList() as $documentItem)
+                                        <option value="{{ $documentItem }}" @selected(old('document_type') === $documentItem)>{{ $documentItem }}</option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <input type="text" name="document_type" value="{{ old('document_type') }}" class="form-control @error('document_type') is-invalid @enderror" placeholder="Optional label, e.g. ID Copy">
+                            @endif
                             @error('document_type')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
@@ -182,6 +296,18 @@
 
             <div class="card">
                 <div class="card-header">
+                    <h3 class="card-title">Conversation</h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Use the dedicated chat screen to follow the full conversation with the municipality.</p>
+                    <a href="{{ route('citizen.messages.show', $serviceRequest) }}" class="btn btn-primary btn-block">
+                        Open Chat
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
                     <h3 class="card-title">Service Feedback</h3>
                 </div>
                 <div class="card-body">
@@ -248,65 +374,6 @@
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Messages</h3>
-                </div>
-                <div class="card-body">
-                    <div class="mb-4">
-                        @forelse ($serviceRequest->requestMessages as $messageItem)
-                            <div class="border rounded p-3 mb-3 {{ $messageItem->sender_id === Auth::id() ? 'bg-light' : '' }}">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div>
-                                        <strong>{{ $messageItem->sender->name ?? 'Unknown User' }}</strong>
-                                        <span class="text-muted small ml-2">
-                                            {{ optional($messageItem->created_at)->format('Y-m-d H:i') ?: '-' }}
-                                        </span>
-                                    </div>
-                                    @if ($messageItem->sender_id !== Auth::id() && !$messageItem->read_at)
-                                        <span class="badge badge-info">Unread</span>
-                                    @endif
-                                </div>
-
-                                @if (filled($messageItem->body))
-                                    <div class="mb-2">{!! nl2br(e($messageItem->body)) !!}</div>
-                                @endif
-
-                                @if ($messageItem->attachment_url)
-                                    <a href="{{ $messageItem->attachment_url }}" target="_blank" rel="noopener">
-                                        Open attachment
-                                    </a>
-                                @endif
-                            </div>
-                        @empty
-                            <p class="text-muted mb-0">No messages yet.</p>
-                        @endforelse
-                    </div>
-
-                    <form method="POST" action="{{ route('citizen.requests.messages.store', $serviceRequest) }}" enctype="multipart/form-data">
-                        @csrf
-
-                        <div class="form-group">
-                            <label>Message</label>
-                            <textarea name="body" rows="4" class="form-control @error('body') is-invalid @enderror" placeholder="Write your message to the municipality.">{{ old('body') }}</textarea>
-                            @error('body')
-                                <span class="invalid-feedback d-block">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
-                            <label>Attachment</label>
-                            <input type="file" name="attachment" class="form-control-file @error('attachment') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*">
-                            <small class="form-text text-muted">Optional. PDF and image files up to 5 MB.</small>
-                            @error('attachment')
-                                <span class="invalid-feedback d-block">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-block">Send Message</button>
-                    </form>
-                </div>
-            </div>
         </div>
     </div>
 @endsection

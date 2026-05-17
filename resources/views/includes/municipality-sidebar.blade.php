@@ -43,9 +43,21 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link disabled" aria-disabled="true">
+                    <a href="{{ route('municipality.messages.open') }}" class="nav-link {{ request()->routeIs('municipality.messages.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-envelope"></i>
-                        <p>Messages</p>
+                        <p>
+                            Messages
+                            <span id="municipality-sidebar-message-badge" class="right badge badge-info {{ $municipalityUnreadMessageCount ? '' : 'd-none' }}">{{ $municipalityUnreadMessageCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('municipality.notifications.index') }}" class="nav-link {{ request()->routeIs('municipality.notifications.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-bell"></i>
+                        <p>
+                            Notifications
+                            <span data-notification-count-badge class="right badge badge-warning {{ $municipalityUnreadCount ? '' : 'd-none' }}">{{ $municipalityUnreadCount }}</span>
+                        </p>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -58,6 +70,12 @@
                     <a href="{{ route('municipality.reports.index') }}" class="nav-link {{ request()->routeIs('municipality.reports.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-chart-bar"></i>
                         <p>Reports</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('municipality.payments.index') }}" class="nav-link {{ request()->routeIs('municipality.payments.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-credit-card"></i>
+                        <p>Payment History</p>
                     </a>
                 </li>
                 <li class="nav-item">

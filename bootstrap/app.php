@@ -8,7 +8,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
+    )
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
@@ -16,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         'checkRole' => \App\Http\Middleware\CheckRole::class,
         'check2fa' => \App\Http\Middleware\CheckTwoFactorSession::class,
     ]);
+        $middleware->validateCsrfTokens(except: ['/webhook/stripe']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

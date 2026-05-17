@@ -28,6 +28,11 @@ class GovernmentOffice extends Model
         'contact_info',
     ];
 
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+    ];
+
     public function municipality()
     {
         return $this->belongsTo(Municipality::class, 'municipality_id', 'id');
@@ -66,5 +71,10 @@ class GovernmentOffice extends Model
     public function appointments()
     {
         return $this->hasMany(Appointment::class, 'government_office_id', 'id');
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
     }
 }

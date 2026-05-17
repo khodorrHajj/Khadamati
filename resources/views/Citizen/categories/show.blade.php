@@ -22,10 +22,10 @@
                         <h3 class="h5">{{ $service->name }}</h3>
                         <p>{{ $service->description ?: 'No service description available.' }}</p>
                         <div class="d-flex justify-content-between text-muted small mb-3">
-                            <span>${{ number_format((float) $service->price, 2) }}</span>
-                            <span>{{ $service->duration_days }} day{{ $service->duration_days === 1 ? '' : 's' }}</span>
+                            <span>{{ $service->formattedPrice() }}</span>
+                            <span>{{ $service->durationLabel() }}</span>
                         </div>
-                        <a href="{{ route('citizen.services.show', $service) }}" class="btn btn-primary btn-sm">View Service</a>
+                        <a href="{{ route('citizen.services.request.create', $service) }}" class="btn btn-primary btn-sm">Start Request</a>
                     </div>
                 </div>
             </div>

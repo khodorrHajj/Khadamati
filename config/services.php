@@ -39,4 +39,9 @@ return [
         'driver' => env('SMS_DRIVER', 'stub'),
         'from' => env('SMS_FROM'),
     ],
+    'stripe' => [
+        'key'            => env('STRIPE_KEY'),
+        'secret'         => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
 ];

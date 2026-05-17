@@ -21,10 +21,11 @@
     @endif
 
     <div class="row">
+        {{-- Create Service --}}
         <div class="col-lg-4">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Create Service</h3>
+                    <h3 class="card-title"><i class="fas fa-plus-circle mr-1"></i> Create Service</h3>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('municipality.services.store') }}">
@@ -47,7 +48,7 @@
 
                         <div class="form-group">
                             <label>Service Name</label>
-                            <input type="text" name="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror">
+                            <input type="text" name="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror" placeholder="e.g. Birth Certificate">
                             @error('name')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
@@ -55,7 +56,7 @@
 
                         <div class="form-group">
                             <label>Description</label>
-                            <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="3">{{ old('description') }}</textarea>
+                            <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="3" placeholder="Describe this service...">{{ old('description') }}</textarea>
                             @error('description')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
@@ -63,16 +64,17 @@
 
                         <div class="form-row">
                             <div class="form-group col-md-6">
-                                <label>Price</label>
-                                <input type="number" step="0.01" min="0" name="price" value="{{ old('price') }}" class="form-control @error('price') is-invalid @enderror">
+                                <label>Price (LBP)</label>
+                                <input type="number" step="1000" min="0" name="price" value="{{ old('price') }}" class="form-control @error('price') is-invalid @enderror" placeholder="250000">
+                                <small class="form-text text-muted">Enter the service fee in Lebanese pounds.</small>
                                 @error('price')
                                     <span class="invalid-feedback d-block">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="form-group col-md-6">
-                                <label>Duration in Days</label>
-                                <input type="number" min="1" name="duration_days" value="{{ old('duration_days') }}" class="form-control @error('duration_days') is-invalid @enderror">
+                                <label>Duration From (Days)</label>
+                                <input type="number" min="1" name="duration_days" value="{{ old('duration_days') }}" class="form-control @error('duration_days') is-invalid @enderror" placeholder="3">
                                 @error('duration_days')
                                     <span class="invalid-feedback d-block">{{ $message }}</span>
                                 @enderror
@@ -80,10 +82,32 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Required Documents</label>
-                            <textarea name="required_documents" class="form-control @error('required_documents') is-invalid @enderror" rows="4" placeholder="One document per line">{{ old('required_documents') }}</textarea>
-                            <small class="form-text text-muted">Keep using plain text. Enter one document per line.</small>
+                            <label>Duration To (Days)</label>
+                            <input type="number" min="{{ old('duration_days', 1) }}" name="duration_days_max" value="{{ old('duration_days_max', old('duration_days')) }}" class="form-control @error('duration_days_max') is-invalid @enderror" placeholder="7">
+                            <small class="form-text text-muted">Citizens will see this as an expected range.</small>
+                            @error('duration_days_max')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            @include('shared.document-picker', [
+                                'pickerId' => 'service-required-documents-create',
+                                'inputName' => 'required_documents_list',
+                                'label' => 'Required Documents',
+                                'placeholder' => 'Search or type a required document',
+                                'presetDocuments' => $requiredDocumentPresets,
+                                'selectedDocuments' => old('required_documents_list', []),
+                                'legacyInputName' => 'required_documents',
+                                'helpText' => 'Search from the preloaded document catalog, add the ones you need, and remove them anytime.',
+                            ])
                             @error('required_documents')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                            @error('required_documents_list')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                            @error('required_documents_list.*')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
                         </div>
@@ -94,10 +118,11 @@
             </div>
         </div>
 
+        {{-- Services List --}}
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Services for {{ $office->name }}</h3>
+                    <h3 class="card-title"><i class="fas fa-concierge-bell mr-1"></i> Services for {{ $office->name }}</h3>
                 </div>
                 <div class="card-body border-bottom">
                     <form method="GET" action="{{ route('municipality.services') }}">
@@ -105,12 +130,7 @@
                             <div class="col-md-5">
                                 <div class="form-group mb-md-0">
                                     <label class="sr-only">Search</label>
-                                    <input
-                                        type="text"
-                                        name="search"
-                                        value="{{ old('search', $search) }}"
-                                        class="form-control"
-                                        placeholder="Search by service name">
+                                    <input type="text" name="search" value="{{ old('search', $search) }}" class="form-control" placeholder="Search by service name">
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -170,15 +190,15 @@
                                         @endif
                                     </td>
                                     <td>{{ $service->serviceCategory ? $service->serviceCategory->name : '-' }}</td>
-                                    <td>${{ number_format((float) $service->price, 2) }}</td>
-                                    <td>{{ $service->duration_days }} day{{ $service->duration_days === 1 ? '' : 's' }}</td>
+                                    <td>{{ $service->formattedPrice() }}</td>
+                                    <td>{{ $service->durationLabel() }}</td>
                                     <td>
                                         <span class="badge {{ $service->is_active ? 'badge-success' : 'badge-secondary' }}">
                                             {{ $service->is_active ? 'Active' : 'Inactive' }}
                                         </span>
                                     </td>
                                     <td>
-                                        @php($documents = preg_split('/\r\n|\r|\n/', (string) $service->required_documents, -1, PREG_SPLIT_NO_EMPTY))
+                                        @php($documents = $service->requiredDocumentList())
                                         @if (count($documents))
                                             @foreach ($documents as $document)
                                                 <div>{{ $document }}</div>
@@ -207,7 +227,10 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center">No services found.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="fas fa-concierge-bell fa-2x mb-2 d-block"></i>
+                                        No services found.
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>

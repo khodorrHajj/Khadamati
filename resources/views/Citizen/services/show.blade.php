@@ -35,11 +35,15 @@
                             </tr>
                             <tr>
                                 <th>Price</th>
-                                <td>${{ number_format((float) $service->price, 2) }}</td>
+                                <td>{{ $service->formattedPrice() }}</td>
                             </tr>
                             <tr>
                                 <th>Estimated Duration</th>
-                                <td>{{ $service->duration_days }} day{{ $service->duration_days === 1 ? '' : 's' }}</td>
+                                <td>{{ $service->durationLabel() }}</td>
+                            </tr>
+                            <tr>
+                                <th>Office Location</th>
+                                <td>{{ $service->governmentOffice?->formatted_address ?: ($service->governmentOffice?->city ?: 'Open the office page to view location details.') }}</td>
                             </tr>
                             <tr>
                                 <th>Description</th>
@@ -48,7 +52,7 @@
                             <tr>
                                 <th>Required Documents</th>
                                 <td>
-                                    @php($documents = preg_split('/\r\n|\r|\n/', (string) $service->required_documents, -1, PREG_SPLIT_NO_EMPTY))
+                                    @php($documents = $service->requiredDocumentList())
                                     @if (count($documents))
                                         @foreach ($documents as $document)
                                             <div>{{ $document }}</div>
@@ -67,31 +71,20 @@
         <div class="col-lg-5">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Submit Request</h3>
+                    <h3 class="card-title">Start Request</h3>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('citizen.requests.store', $service) }}" enctype="multipart/form-data">
-                        @csrf
-
-                        <div class="form-group">
-                            <label>Notes</label>
-                            <textarea name="notes" rows="5" class="form-control @error('notes') is-invalid @enderror" placeholder="Optional notes or request details">{{ old('notes') }}</textarea>
-                            @error('notes')
-                                <span class="invalid-feedback d-block">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
-                            <label>Supporting Documents</label>
-                            <input type="file" name="documents[]" multiple class="form-control-file @error('documents.*') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*">
-                            <small class="form-text text-muted">PDF and image files only. Upload the documents listed by the office when available.</small>
-                            @error('documents.*')
-                                <span class="invalid-feedback d-block">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-block">Submit Request</button>
-                    </form>
+                    @if ((float) $service->price > 0)
+                        <p class="text-muted">This service requires payment. You will be redirected to Stripe to pay securely. Your request will be created automatically once payment is confirmed.</p>
+                        <a href="{{ route('citizen.payment.show', $service) }}" class="btn btn-success btn-block">
+                            Pay & Submit Request
+                        </a>
+                    @else
+                        <p class="text-muted">Review the required documents and add your notes before submitting this request.</p>
+                        <a href="{{ route('citizen.services.request.create', $service) }}" class="btn btn-primary btn-block">
+                            Start Request
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

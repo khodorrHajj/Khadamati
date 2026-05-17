@@ -7,7 +7,9 @@ use App\Http\Requests\Municipality\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\GovernmentOffice;
 use App\Models\TimeSlot;
+use App\Services\CitizenNotificationService;
 use App\Services\AppointmentEmailHook;
+use App\Services\RequestTimelineService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -60,7 +62,13 @@ class AppointmentController extends Controller
             ->with('success', 'Time slot created successfully.');
     }
 
-    public function update(UpdateAppointmentRequest $request, Appointment $appointment, AppointmentEmailHook $emailHook): RedirectResponse
+    public function update(
+        UpdateAppointmentRequest $request,
+        Appointment $appointment,
+        AppointmentEmailHook $emailHook,
+        CitizenNotificationService $citizenNotificationService,
+        RequestTimelineService $timelineService
+    ): RedirectResponse
     {
         $office = $this->assignedOffice();
 
@@ -84,7 +92,10 @@ class AppointmentController extends Controller
                 'reminder_scheduled_at' => Appointment::reminderScheduleFor($appointment->timeSlot?->starts_at),
             ]);
 
-            $emailHook->send($appointment->fresh(['governmentOffice', 'serviceRequest.service', 'timeSlot', 'user']), 'approved');
+            $appointment = $appointment->fresh(['governmentOffice', 'serviceRequest.service', 'timeSlot', 'user']);
+            $emailHook->send($appointment, 'approved');
+            $timelineService->recordAppointmentUpdated($appointment, $office->name ?? 'Municipality', Auth::id());
+            $citizenNotificationService->notifyAppointmentUpdated($appointment);
         }
 
         if ($validated['action'] === 'reschedule') {
@@ -115,7 +126,10 @@ class AppointmentController extends Controller
                 'reminder_scheduled_at' => Appointment::reminderScheduleFor($targetSlot->starts_at),
             ]);
 
-            $emailHook->send($appointment->fresh(['governmentOffice', 'serviceRequest.service', 'timeSlot', 'user']), 'rescheduled');
+            $appointment = $appointment->fresh(['governmentOffice', 'serviceRequest.service', 'timeSlot', 'user']);
+            $emailHook->send($appointment, 'rescheduled');
+            $timelineService->recordAppointmentUpdated($appointment, $office->name ?? 'Municipality', Auth::id());
+            $citizenNotificationService->notifyAppointmentUpdated($appointment);
         }
 
         if ($validated['action'] === 'cancel') {
@@ -130,7 +144,10 @@ class AppointmentController extends Controller
                 'reminder_scheduled_at' => null,
             ]);
 
-            $emailHook->send($appointment->fresh(['governmentOffice', 'serviceRequest.service', 'timeSlot', 'user']), 'cancelled');
+            $appointment = $appointment->fresh(['governmentOffice', 'serviceRequest.service', 'timeSlot', 'user']);
+            $emailHook->send($appointment, 'cancelled');
+            $timelineService->recordAppointmentUpdated($appointment, $office->name ?? 'Municipality', Auth::id());
+            $citizenNotificationService->notifyAppointmentUpdated($appointment);
         }
 
         return redirect()->back()->with('success', 'Appointment updated successfully.');

@@ -38,7 +38,7 @@ class MunicipalityUserController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('Admin.MunicipalityUsers', compact('offices', 'users', 'search'));
+        return view('Admin.MunicipalityUsers', compact('offices', 'users', 'search'))->with('positions', User::MUNICIPALITY_POSITIONS);
     }
 
     public function store(StoreMunicipalityUserRequest $request): RedirectResponse
