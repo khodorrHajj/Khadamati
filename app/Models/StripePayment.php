@@ -13,12 +13,16 @@ class StripePayment extends Model
         'stripe_session_id',
         'stripe_payment_intent_id',
         'price_amount',
+        'price_amount_usd',
+        'exchange_rate',
         'status',
         'payment_url',
     ];
 
     protected $casts = [
-        'price_amount' => 'decimal:2',
+        'price_amount'     => 'decimal:2',
+        'price_amount_usd' => 'decimal:2',
+        'exchange_rate'    => 'decimal:6',
     ];
 
     public function user()

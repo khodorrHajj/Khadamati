@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Service;
 use App\Models\StripePayment;
+use App\Support\LebaneseCurrency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Checkout\Session;
@@ -16,11 +17,16 @@ class StripePaymentService
     {
         Stripe::setApiKey(config('services.stripe.secret'));
 
+        $exchangeRate = LebaneseCurrency::getRate();
+        $usdAmount    = LebaneseCurrency::toUsd((float) $service->price);
+
         $stripePayment = StripePayment::create([
-            'user_id'      => $userId,
-            'service_id'   => $service->id,
-            'price_amount' => $service->price,
-            'status'       => 'pending',
+            'user_id'          => $userId,
+            'service_id'       => $service->id,
+            'price_amount'     => $service->price,
+            'price_amount_usd' => $usdAmount,
+            'exchange_rate'    => $exchangeRate,
+            'status'           => 'pending',
         ]);
 
         $session = Session::create([
@@ -29,7 +35,7 @@ class StripePaymentService
             'line_items'           => [[
                 'price_data' => [
                     'currency'     => 'usd',
-                    'unit_amount'  => (int) round((float) $service->price * 100),
+                    'unit_amount'  => (int) round($usdAmount * 100),
                     'product_data' => [
                         'name' => $service->name,
                     ],
