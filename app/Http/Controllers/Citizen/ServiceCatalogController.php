@@ -182,6 +182,10 @@ class ServiceCatalogController extends Controller
         $service->load(['governmentOffice.municipality', 'serviceCategory']);
         $this->ensureActiveService($service);
 
+        if ((float) $service->price > 0) {
+            return redirect()->route('citizen.payment.show', $service);
+        }
+
         return view('Citizen.services.request', compact('service'));
     }
 
@@ -195,6 +199,8 @@ class ServiceCatalogController extends Controller
     {
         $service->load(['governmentOffice.municipality', 'serviceCategory']);
         $this->ensureActiveService($service);
+
+        abort_if((float) $service->price > 0, 403, 'This service requires payment. Please complete payment first.');
 
         $validated = $request->validated();
         $serviceRequest = $serviceRequestService->create(

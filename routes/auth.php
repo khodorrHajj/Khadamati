@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Citizen\CryptoPaymentController;
+use App\Http\Controllers\Citizen\StripePaymentController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\IdentityVerificationController;
 use App\Http\Controllers\RequestMessageAttachmentController;
@@ -21,7 +21,7 @@ Route::get('/auth/google', [LoginController::class, 'redirectToGoogle'])->name('
 Route::get('/auth/google/callback', [LoginController::class, 'handleGoogleCallback'])->name('google.callback');
 Route::get('/track/{trackingCode}', [TrackingController::class, 'show'])->name('tracking.show');
 
-Route::post('/webhook/nowpayments', [CryptoPaymentController::class, 'webhook'])->name('webhook.nowpayments');
+Route::post('/webhook/stripe', [StripePaymentController::class, 'webhook'])->name('webhook.stripe');
 
 Route::middleware('check2fa')->group(function () {
     Route::get('/2fa', [LoginController::class, 'twoFactorForm'])->name('twofactor.form');

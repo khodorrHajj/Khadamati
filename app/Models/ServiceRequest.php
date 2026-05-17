@@ -181,9 +181,9 @@ class ServiceRequest extends Model
         return $this->belongsTo(User::class, 'official_response_uploaded_by', 'id');
     }
 
-    public function cryptoPayment()
+    public function stripePayment()
     {
-        return $this->hasOne(CryptoPayment::class, 'service_request_id', 'id');
+        return $this->hasOne(StripePayment::class, 'service_request_id', 'id');
     }
 
     public function assignedTo()

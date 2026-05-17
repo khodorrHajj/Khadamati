@@ -11,15 +11,10 @@
                     <div class="mb-4">
                         <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
                     </div>
-                    <h4 class="mb-3">Thank You — Payment Received</h4>
+                    <h4 class="mb-3">Payment Successful!</h4>
                     <p class="text-muted mb-4">
-                        Your cryptocurrency payment has been submitted to the network.
-                        Once the transaction is confirmed, your service request will be created automatically
+                        Your payment has been received. Your service request will be created shortly
                         and you will be able to track it from your dashboard.
-                    </p>
-                    <p class="text-muted small mb-4">
-                        Confirmation can take a few minutes depending on network conditions.
-                        No action is required from you at this time.
                     </p>
                     <a href="{{ route('citizen.dashboard') }}" class="btn btn-primary">
                         Go to Dashboard
