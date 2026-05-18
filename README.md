@@ -359,7 +359,6 @@ php artisan config:clear
 ## Implementation Notes
 
 - Card payments are implemented with Stripe.
-- Cryptocurrency payment is not implemented in the current codebase.
 - Chat is true real-time through Reverb.
 - Several other live updates use AJAX polling rather than websockets.
 - SMS support is only stubbed/prepared and is not connected to a real provider.
