@@ -166,6 +166,9 @@
                 <div class="card-body">
                     <strong>{{ Auth::user()->name }}</strong>
                     <p class="text-muted mb-0">{{ Auth::user()->email }}</p>
+                    <a href="{{ route('citizen.profile.show') }}" class="btn btn-outline-primary btn-sm mt-3">
+                        <i class="fas fa-user-cog mr-1"></i> Manage Profile
+                    </a>
                 </div>
             </div>
         </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Citizen\DashboardController;
 use App\Http\Controllers\Citizen\FeedbackController;
 use App\Http\Controllers\Citizen\NotificationController;
 use App\Http\Controllers\Citizen\PaymentHistoryController;
+use App\Http\Controllers\Citizen\ProfileController;
 use App\Http\Controllers\Citizen\RequestMessageController;
 use App\Http\Controllers\Citizen\ServiceCatalogController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,11 @@ Route::middleware(['checkIfConnected', 'checkRole:citizen'])
     ->name('citizen.')
     ->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+        Route::post('/profile/password/send-otp', [ProfileController::class, 'sendPasswordOtp'])->name('profile.password.send-otp');
+        Route::post('/profile/password/confirm-otp', [ProfileController::class, 'confirmPasswordOtp'])->name('profile.password.confirm-otp');
+        Route::post('/profile/password/resend-otp', [ProfileController::class, 'resendPasswordOtp'])->name('profile.password.resend-otp');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
         Route::get('/services', [ServiceCatalogController::class, 'services'])->name('services.index');
         Route::get('/offices', [ServiceCatalogController::class, 'offices'])->name('offices.index');
         Route::get('/offices/{office}', [ServiceCatalogController::class, 'office'])->name('offices.show');

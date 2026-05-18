@@ -61,7 +61,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('citizen.dashboard') }}" class="nav-link">
+                    <a href="{{ route('citizen.profile.show') }}" class="nav-link {{ request()->routeIs('citizen.profile.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user"></i>
                         <p>Profile</p>
                     </a>
