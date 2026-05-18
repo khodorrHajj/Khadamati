@@ -358,8 +358,6 @@ php artisan config:clear
 
 ## Implementation Notes
 
-These points are useful both for developers and for project presentation:
-
 - Card payments are implemented with Stripe.
 - Cryptocurrency payment is not implemented in the current codebase.
 - Chat is true real-time through Reverb.
@@ -367,16 +365,4 @@ These points are useful both for developers and for project presentation:
 - SMS support is only stubbed/prepared and is not connected to a real provider.
 - QR codes are generated dynamically from request tracking URLs.
 - Statistics are computed from the application database and rendered with Chart.js.
-
-## Security Notes
-
-Before pushing this project publicly, do not include:
-
-- `.env`
-- real Stripe keys
-- Google OAuth client secrets
-- Google service-account JSON files
-- any private production credentials
-
-Only commit safe placeholders such as `.env.example`.
 
